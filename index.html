@@ -4,72 +4,852 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Citizen Service Request System</title>
-    <link rel="stylesheet" href="css/style.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #e0e0e0;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2a5298 100%);
+            padding: 50px 20px;
+            text-align: center;
+            border-radius: 20px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5);
+            margin-bottom: 30px;
+            animation: slideDown 0.6s ease-out;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        header h1 {
+            color: #64b5f6;
+            font-size: 2.8em;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px rgba(100, 181, 246, 0.5);
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        header p {
+            color: #b3d9ff;
+            font-size: 1.2em;
+            font-weight: 300;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .filter-section {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2a5298 100%);
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .filter-controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-btn {
+            padding: 12px 24px;
+            background: rgba(100, 181, 246, 0.2);
+            color: #64b5f6;
+            border: 2px solid #64b5f6;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.95em;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .filter-btn:hover {
+            background: #64b5f6;
+            color: #1a1a2e;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(100, 181, 246, 0.4);
+        }
+
+        .filter-btn.active {
+            background: #64b5f6;
+            color: #1a1a2e;
+            box-shadow: 0 0 20px rgba(100, 181, 246, 0.6);
+        }
+
+        form {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2a5298 100%);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5);
+            margin-bottom: 40px;
+            transition: transform 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        form:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+        }
+
+        h2 {
+            color: #64b5f6;
+            margin-bottom: 30px;
+            font-size: 2em;
+            text-align: center;
+            font-weight: 700;
+            text-shadow: 0 0 20px rgba(100, 181, 246, 0.3);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #b3d9ff;
+            font-weight: 600;
+            font-size: 0.95em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 16px;
+            margin-bottom: 25px;
+            border: 2px solid rgba(100, 181, 246, 0.3);
+            border-radius: 12px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            background: rgba(30, 58, 95, 0.5);
+            color: #e0e0e0;
+            font-family: 'Inter', sans-serif;
+            font-weight: 400;
+        }
+
+        input::placeholder, textarea::placeholder {
+            color: #7a8fa6;
+        }
+
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #64b5f6;
+            background: rgba(30, 58, 95, 0.8);
+            box-shadow: 0 0 0 4px rgba(100, 181, 246, 0.2), 0 0 20px rgba(100, 181, 246, 0.3);
+            transform: scale(1.02);
+        }
+
+        .custom-select {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        .select-button {
+            width: 100%;
+            padding: 16px;
+            background: rgba(30, 58, 95, 0.5);
+            border: 2px solid rgba(100, 181, 246, 0.3);
+            border-radius: 12px;
+            color: #e0e0e0;
+            font-size: 1em;
+            cursor: pointer;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+            font-weight: 400;
+        }
+
+        .select-button:hover {
+            border-color: #64b5f6;
+            background: rgba(30, 58, 95, 0.8);
+        }
+
+        .select-button.active {
+            border-color: #64b5f6;
+            background: rgba(30, 58, 95, 0.8);
+            box-shadow: 0 0 0 4px rgba(100, 181, 246, 0.2);
+        }
+
+        .select-arrow {
+            transition: transform 0.3s ease;
+            font-size: 1.2em;
+            color: #64b5f6;
+        }
+
+        .select-arrow.open {
+            transform: rotate(180deg);
+        }
+
+        .select-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #1e3a5f;
+            border: 2px solid #64b5f6;
+            border-radius: 12px;
+            margin-top: 8px;
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .select-dropdown.open {
+            max-height: 400px;
+            opacity: 1;
+            overflow-y: auto;
+        }
+
+        .select-option {
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #e0e0e0;
+            border-bottom: 1px solid rgba(100, 181, 246, 0.1);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .select-option:last-child {
+            border-bottom: none;
+        }
+
+        .select-option:hover {
+            background: rgba(100, 181, 246, 0.2);
+            color: #64b5f6;
+            padding-left: 30px;
+        }
+
+        .select-option.selected {
+            background: rgba(100, 181, 246, 0.3);
+            color: #64b5f6;
+            font-weight: 600;
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.2em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 25px rgba(76, 175, 80, 0.4);
+            font-family: 'Inter', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button[type="submit"]:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 35px rgba(76, 175, 80, 0.6);
+            background: linear-gradient(135deg, #45a049 0%, #4CAF50 100%);
+        }
+
+        button[type="submit"]:active {
+            transform: translateY(-1px);
+        }
+
+        .table-container {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2a5298 100%);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5);
+            overflow-x: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-export {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-export:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 107, 107, 0.5);
+        }
+
+        .btn-clear {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(255, 152, 0, 0.3);
+        }
+
+        .btn-clear:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 152, 0, 0.5);
+        }
+
+        .btn-stats {
+            background: linear-gradient(135deg, #9c27b0 0%, #7b1fa2 100%);
+            color: white;
+            box-shadow: 0 5px 15px rgba(156, 39, 176, 0.3);
+        }
+
+        .btn-stats:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(156, 39, 176, 0.5);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        thead {
+            background: linear-gradient(135deg, #2a5298 0%, #1e3a5f 100%);
+            color: #64b5f6;
+        }
+
+        th {
+            padding: 20px;
+            text-align: left;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 1px;
+            border-bottom: 3px solid #64b5f6;
+        }
+
+        tbody tr {
+            background: rgba(30, 58, 95, 0.3);
+            transition: all 0.3s ease;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        tbody tr:nth-child(even) {
+            background: rgba(30, 58, 95, 0.5);
+        }
+
+        tbody tr:hover {
+            background: rgba(100, 181, 246, 0.2);
+            transform: scale(1.01);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        td {
+            padding: 18px 20px;
+            border-bottom: 1px solid rgba(100, 181, 246, 0.1);
+            color: #e0e0e0;
+        }
+
+        .status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.8em;
+            text-transform: uppercase;
+            display: inline-block;
+            letter-spacing: 0.5px;
+        }
+
+        .status.pending {
+            background: linear-gradient(135deg, #ffa726 0%, #ff9800 100%);
+            color: #1a1a2e;
+            box-shadow: 0 0 15px rgba(255, 167, 38, 0.5);
+        }
+
+        .status.in-progress {
+            background: linear-gradient(135deg, #42a5f5 0%, #2196f3 100%);
+            color: #1a1a2e;
+            box-shadow: 0 0 15px rgba(66, 165, 245, 0.5);
+        }
+
+        .status.resolved {
+            background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
+            color: #1a1a2e;
+            box-shadow: 0 0 15px rgba(102, 187, 106, 0.5);
+        }
+
+        .action-cell {
+            display: flex;
+            gap: 8px;
+        }
+
+        .mini-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.75em;
+            transition: all 0.2s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .btn-edit {
+            background: #42a5f5;
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: #2196f3;
+            transform: scale(1.1);
+        }
+
+        .btn-delete {
+            background: #ef5350;
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #f44336;
+            transform: scale(1.1);
+        }
+
+        footer {
+            text-align: center;
+            color: #b3d9ff;
+            padding: 30px;
+            margin-top: 40px;
+            font-size: 0.95em;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, #66bb6a 0%, #4caf50 100%);
+            color: white;
+            padding: 18px 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            text-align: center;
+            font-weight: 700;
+            animation: slideDown 0.5s ease-out;
+            border-left: 5px solid #2e7d32;
+            box-shadow: 0 10px 30px rgba(76, 175, 80, 0.4);
+            font-size: 1.05em;
+        }
+
+        .stats-panel {
+            display: none;
+            background: rgba(30, 58, 95, 0.8);
+            padding: 30px;
+            border-radius: 12px;
+            margin-top: 20px;
+            border: 2px solid #64b5f6;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .stats-panel.show {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #2a5298 0%, #1e3a5f 100%);
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid rgba(100, 181, 246, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: #64b5f6;
+            box-shadow: 0 10px 30px rgba(100, 181, 246, 0.3);
+        }
+
+        .stat-number {
+            font-size: 3em;
+            font-weight: 800;
+            color: #64b5f6;
+            text-shadow: 0 0 20px rgba(100, 181, 246, 0.5);
+        }
+
+        .stat-label {
+            color: #b3d9ff;
+            font-weight: 600;
+            margin-top: 10px;
+            text-transform: uppercase;
+            font-size: 0.9em;
+            letter-spacing: 1px;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2em;
+            }
+
+            form, .table-container {
+                padding: 25px;
+            }
+
+            table {
+                font-size: 0.85em;
+            }
+
+            th, td {
+                padding: 12px 10px;
+            }
+
+            .filter-controls {
+                flex-direction: column;
+            }
+
+            .filter-btn {
+                width: 100%;
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(30, 58, 95, 0.3);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #64b5f6;
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #42a5f5;
+        }
+    </style>
 </head>
 <body>
-
 <header>
-    <h1>Smart Citizen Service Request System</h1>
-    <p>Report community issues and track their status</p>
+    <h1>🏙️ Smart Citizen Service Request System</h1>
+    <p>Report community issues and track their status in real-time</p>
 </header>
 
 <div class="container">
+    <div id="successMessage" style="display: none;"></div>
+    
+    <div class="filter-section">
+        <h2 style="font-size: 1.5em; margin-bottom: 20px;">🔍 Filter Requests</h2>
+        <div class="filter-controls">
+            <button class="filter-btn active" data-filter="all">All Requests</button>
+            <button class="filter-btn" data-filter="pending">Pending</button>
+            <button class="filter-btn" data-filter="in-progress">In Progress</button>
+            <button class="filter-btn" data-filter="resolved">Resolved</button>
+        </div>
+    </div>
 
-    <!-- =======================
-         Request Submission Form
-    ======================== -->
     <form id="requestForm">
-        <h2>Submit a Request</h2>
-
+        <h2>📝 Submit a Request</h2>
         <label for="name">Your Name</label>
-        <input type="text" id="name" name="name" required>
-
-        <label for="email">Email</label>
-        <input type="email" id="email" name="email" required>
-
+        <input type="text" id="name" name="name" placeholder="Enter your full name" required>
+        
+        <label for="email">Email Address</label>
+        <input type="email" id="email" name="email" placeholder="your.email@example.com" required>
+        
         <label for="type">Issue Type</label>
-        <select id="type" name="type" required>
-            <option value="">Select an issue</option>
-            <option value="Broken road">Broken Road</option>
-            <option value="Street light">Street Light Not Working</option>
-            <option value="Water">Water Issue</option>
-            <option value="Garbage">Garbage Not Collected</option>
-            <option value="Noise">Noise Disturbance</option>
-            <option value="Lost item">Lost & Found Item</option>
-        </select>
-
+        <div class="custom-select">
+            <div class="select-button" id="selectButton">
+                <span id="selectValue">Select an issue type</span>
+                <span class="select-arrow">▼</span>
+            </div>
+            <div class="select-dropdown" id="selectDropdown">
+                <div class="select-option" data-value="Broken road">🛣️ Broken Road</div>
+                <div class="select-option" data-value="Street light">💡 Street Light Not Working</div>
+                <div class="select-option" data-value="Water">💧 Water Issue</div>
+                <div class="select-option" data-value="Garbage">🗑️ Garbage Not Collected</div>
+                <div class="select-option" data-value="Noise">🔊 Noise Disturbance</div>
+                <div class="select-option" data-value="Lost item">🔍 Lost & Found Item</div>
+            </div>
+        </div>
+        
         <label for="description">Description</label>
-        <textarea id="description" name="description" rows="4" required></textarea>
-
-        <button type="submit">Submit Request</button>
+        <textarea id="description" name="description" rows="5" placeholder="Please provide detailed information about the issue..." required></textarea>
+        
+        <button type="submit">🚀 Submit Request</button>
     </form>
 
-    <!-- =======================
-         Requests Table
-    ======================== -->
-    <h2>All Requests</h2>
-    <table id="requestsTable">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Issue Type</th>
-                <th>Description</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- Requests will be inserted here dynamically -->
-        </tbody>
-    </table>
+    <div class="table-container">
+        <h2>📋 All Service Requests</h2>
+        <div class="action-buttons">
+            <button class="action-btn btn-stats" id="statsBtn">📊 Show Statistics</button>
+            <button class="action-btn btn-export" id="exportBtn">💾 Export Data</button>
+            <button class="action-btn btn-clear" id="clearBtn">🗑️ Clear All</button>
+        </div>
 
+        <div class="stats-panel" id="statsPanel">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalStat">0</div>
+                    <div class="stat-label">Total Requests</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="pendingStat">0</div>
+                    <div class="stat-label">Pending</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="progressStat">0</div>
+                    <div class="stat-label">In Progress</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="resolvedStat">0</div>
+                    <div class="stat-label">Resolved</div>
+                </div>
+            </div>
+        </div>
+
+        <table id="requestsTable">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Issue Type</th>
+                    <th>Description</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Requests will be inserted here dynamically -->
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <footer>
-    &copy; 2025 Smart Citizen System
+    &copy; 2025 Smart Citizen System | Making Communities Better Together 🌟
 </footer>
 
-<script src="js/main.js"></script>
-</body>
-</html>
+<script>
+    let requests = [];
+    let nextId = 1;
+    let selectedType = '';
+    let currentFilter = 'all';
+
+    // Custom dropdown functionality
+    const selectButton = document.getElementById('selectButton');
+    const selectDropdown = document.getElementById('selectDropdown');
+    const selectValue = document.getElementById('selectValue');
+    const selectArrow = selectButton.querySelector('.select-arrow');
+    const selectOptions = document.querySelectorAll('.select-option');
+
+    selectButton.addEventListener('click', function(e) {
+        e.stopPropagation();
+        selectDropdown.classList.toggle('open');
+        selectButton.classList.toggle('active');
+        selectArrow.classList.toggle('open');
+    });
+
+    selectOptions.forEach(option => {
+        option.addEventListener('click', function() {
+            selectedType = this.dataset.value;
+            selectValue.textContent = this.textContent;
+            
+            selectOptions.forEach(opt => opt.classList.remove('selected'));
+            this.classList.add('selected');
+            
+            selectDropdown.classList.remove('open');
+            selectButton.classList.remove('active');
+            selectArrow.classList.remove('open');
+        });
+    });
+
+    document.addEventListener('click', function() {
+        selectDropdown.classList.remove('open');
+        selectButton.classList.remove('active');
+        selectArrow.classList.remove('open');
+    });
+
+    // Filter functionality
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            filterBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentFilter = this.dataset.filter;
+            loadRequests();
+        });
+    });
+
+    // Statistics functionality
+    document.getElementById('statsBtn').addEventListener('click', function() {
+        const panel = document.getElementById('statsPanel');
+        panel.classList.toggle('show');
+        updateStatistics();
+    });
+
+    function updateStatistics() {
+        const total = requests.length;
+        const pending = requests.filter(r => r.status === 'pending').length;
+        const progress = requests.filter(r => r.status === 'in-progress').length;
+        const resolved = requests.filter(r => r.status === 'resolved').length;
+
+        document.getElementById('totalStat').textContent = total;
+        document.getElementById('pendingStat').textContent = pending;
+        document.getElementById('progressStat').textContent = progress;
+        document.getElementById('resolvedStat').textContent = resolved;
+    }
+
+    // Export functionality
+    document.getElementById('exportBtn').addEventListener('click', function() {
+        if (requests.length === 0) {
+            showMessage('⚠️ No data to export!', '#ff9800');
+            return;
+        }
+        
+        let csv = 'ID,Name,Email,Issue Type,Description,Status\n';
+        requests.forEach(r => {
+            csv += `${r.id},"${r.name}","${r.email}","${r.type}","${r.description}","${r.status}"\n`;
+        });
+        
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'requests_export.csv';
+        a.click();
+        
+        showMessage('✅ Data exported successfully!', '#4caf50');
+    });
+
+    // Clear all functionality
+    document.getElementById('clearBtn').addEventListener('click', function() {
+        if (confirm('⚠️ Are you sure you want to delete all requests? This cannot be undone!')) {
+            requests = [];
+            nextId = 1;
+            loadRequests();
+            updateStatistics();
+            showMessage('🗑️ All requests cleared!', '#ff9800');
+        }
+    });
+
+    // Load requests from memory
+    function loadRequests() {
+        const tbody = document.querySelector('#requestsTable tbody');
+        tbody.innerHTML = '';
+
+        let filteredRequests = requests;
+        if (currentFilter !== 'all') {
+            filteredRequests = requests.filter(r => r.status === currentFilter);
+        }
+
+        if (filteredRequests.length === 0) {
+            const msg = currentFilter === 'all' ? 'No requests yet. Submit the first one!' : `No ${currentFilter} requests found.`;
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 40px; color: #64b5f6; font-size: 1.1em;">${msg}</td></tr>`;
+            return;
+        }
+
+        filteredRequests.forEach(request => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td><strong style="color: #64b5f6;">#${request.id}</strong></td>
+                <td>${request.name}</td>
+                <td>${request.email}</td>
+                <td>${request.type}</td>
+                <td>${request.description}</td>
+                <td><span class="status ${request.status}">${request.status.replace('-', ' ')}</span></td>
+                <td>
+                    <div class="action-cell">
+                        <button class="mini-btn btn-edit" onclick="changeStatus(${request.id})">🔄</button>
+                        <button class="mini-btn btn-delete" onclick="deleteRequest(${request.id})">🗑️</button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        updateStatistics();
+    }
+
+    // Change status
+    window.changeStatus = function(id) {
+        const request = requests.find(r => r.id === id);
+        if (!request) return;
+
+        if (request.status === 'pending') {
+            request.status = 'in-progress';
+        } else if (request.status === 'in-progress') {
+            request.status = 'resolved';
+        } else {
+            request.status = 'pending';
+        }
+
+        loadRequests();
+        showMessage(`✅ Request #${id} status updated to ${request.status}!`, '#4caf50');
+    };
+
+    // Delete request
