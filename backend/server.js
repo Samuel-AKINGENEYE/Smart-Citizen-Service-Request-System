@@ -1,5 +1,4 @@
-console.log('server.js execution started'); // top-level debug log
-
+console.log('server.js execution started');
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
