@@ -1,20 +1,14 @@
-CREATE DATABASE smart_citizen;
-USE smart_citizen;
+CREATE DATABASE IF NOT EXISTS smart_city;
 
-CREATE TABLE service_requests (
+USE smart_city;
+
+CREATE TABLE IF NOT EXISTS requests (
     id INT AUTO_INCREMENT PRIMARY KEY,
     citizen_name VARCHAR(100) NOT NULL,
-    category ENUM(
-        'Broken Road',
-        'Street Light',
-        'Water Issue',
-        'Garbage',
-        'Noise',
-        'Lost & Found'
-    ) NOT NULL,
-    description TEXT NOT NULL,
-    location VARCHAR(255),
-    status ENUM('Pending', 'In Progress', 'Resolved') DEFAULT 'Pending',
+    contact_info VARCHAR(100) NOT NULL,
+    issue_type ENUM('Broken Road','Street Light','Water Issue','Garbage','Noise','Lost/Found') NOT NULL,
+    description TEXT,
+    location VARCHAR(255) NOT NULL,
+    status ENUM('Pending','In Progress','Resolved') DEFAULT 'Pending',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
