@@ -7,10 +7,10 @@ const db = mysql.createConnection({
     database: 'smart_city'
 });
 
-// Log both success and failure
 db.connect((err) => {
     if (err) {
-        console.error('Database connection FAILED:', err);
+        console.error('Database connection FAILED:');
+        console.error(err);
         process.exit(1); // stop server if DB fails
     } else {
         console.log('Connected to MySQL database.');
