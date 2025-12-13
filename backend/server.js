@@ -9,7 +9,7 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-console.log('server.js loaded'); // debug log
+console.log('Server.js loaded');
 
 app.use('/requests', requestRoutes);
 
