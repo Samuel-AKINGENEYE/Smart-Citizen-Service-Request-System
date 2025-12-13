@@ -2,15 +2,14 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const requestRoutes = require('./routes/requests');
-const db = require('./db'); // require db to trigger connection
+const db = require('./db'); // triggers DB connection
 
 const app = express();
 
 app.use(cors());
 app.use(bodyParser.json());
 
-// Simple log to ensure server.js is running
-console.log('server.js loaded');
+console.log('server.js loaded'); // debug log
 
 app.use('/requests', requestRoutes);
 
