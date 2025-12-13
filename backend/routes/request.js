@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const controller = require('../controllers/requestController');
+const requestController = require('../controllers/requestController');
 
-router.get('/', controller.getAllRequests);
-router.post('/', controller.createRequest);
-router.put('/:id', controller.updateStatus);
+// Get all requests
+router.get('/', requestController.getAllRequests);
+
+// Add new request
+router.post('/', requestController.createRequest);
 
 module.exports = router;
