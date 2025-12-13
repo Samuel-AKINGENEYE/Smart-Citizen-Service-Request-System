@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "name": "smart-citizen-backend",
   "version": "1.0.0",
   "main": "server.js",
@@ -11,4 +12,17 @@
     "body-parser": "^1.20.2",
     "cors": "^2.8.5"
   }
+=======
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+>>>>>>> 1a6eb81 (Full working progress: backend + frontend integration, database connected, request submission working)
 }

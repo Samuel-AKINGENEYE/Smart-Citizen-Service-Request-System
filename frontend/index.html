@@ -6,7 +6,33 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+<<<<<<< HEAD
     <h1>Smart Citizen Service Request System</h1>
+=======
+    <h1>Report a Community Issue</h1>
+    <form id="requestForm">
+        <input type="text" name="name" placeholder="Your Name" required><br>
+        <input type="text" name="contact" placeholder="Contact Info" required><br>
+        <select name="issue_type" required>
+            <option value="">Select Issue</option>
+            <option value="Broken Roads">Broken Roads</option>
+            <option value="Street Lights">Street Lights Not Working</option>
+            <option value="Water Issues">Water Issues</option>
+            <option value="Garbage">Garbage Not Collected</option>
+            <option value="Noise Disturbance">Noise Disturbance</option>
+            <option value="Lost & Found">Lost & Found Items</option>
+        </select><br>
+        <input type="text" name="location" placeholder="Location" required><br>
+        <textarea name="description" placeholder="Description"></textarea><br>
+        <button type="submit">Submit Request</button>
+    </form>
+
+    <div id="response"></div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
+>>>>>>> 1a6eb81 (Full working progress: backend + frontend integration, database connected, request submission working)
 
     <form id="reportForm">
         <input type="text" id="name" placeholder="Your Name" required>

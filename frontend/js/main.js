@@ -1,4 +1,31 @@
+<<<<<<< HEAD
 const API_URL = 'http://localhost:3000/requests';
+=======
+const form = document.getElementById('requestForm');
+const responseDiv = document.getElementById('response');
+
+form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(form);
+    const data = Object.fromEntries(formData.entries());
+
+    try {
+        const res = await fetch('http://localhost:3000/requests', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+
+        const result = await res.json();
+        responseDiv.textContent = result.message || JSON.stringify(result);
+        form.reset();
+    } catch (err) {
+        console.error(err);
+        responseDiv.textContent = 'Error submitting request';
+    }
+});
+>>>>>>> 1a6eb81 (Full working progress: backend + frontend integration, database connected, request submission working)
 
 document.getElementById('reportForm').addEventListener('submit', e => {
     e.preventDefault();
