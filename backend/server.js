@@ -1,7 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const requestRoutes = require('./routes/requests');
 const db = require('./db'); // triggers DB connection
 
 const app = express();
@@ -9,9 +8,9 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-console.log('Server.js loaded');
+console.log('server.js loaded');
 
-app.use('/requests', requestRoutes);
+app.get('/', (req, res) => res.send('Backend is running!'));
 
 const PORT = 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
