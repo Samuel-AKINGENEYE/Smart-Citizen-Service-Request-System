@@ -1,1 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Smart Citizen Service Request</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <h1>Smart Citizen Service Request System</h1>
 
+    <form id="reportForm">
+        <input type="text" id="name" placeholder="Your Name" required>
+        <input type="text" id="contact" placeholder="Contact Info" required>
+        <select id="issueType" required>
+            <option value="">Select Issue</option>
+            <option value="Broken Road">Broken Road</option>
+            <option value="Street Light">Street Light</option>
+            <option value="Water Issue">Water Issue</option>
+            <option value="Garbage">Garbage</option>
+            <option value="Noise">Noise</option>
+            <option value="Lost/Found">Lost/Found</option>
+        </select>
+        <input type="text" id="location" placeholder="Location" required>
+        <textarea id="description" placeholder="Description"></textarea>
+        <button type="submit">Submit</button>
+    </form>
+
+    <h2>All Requests</h2>
+    <div id="requestsList"></div>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
