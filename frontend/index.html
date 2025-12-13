@@ -2,58 +2,74 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Smart Citizen Service Request</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Citizen Service Request System</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<<<<<<< HEAD
+
+<header>
     <h1>Smart Citizen Service Request System</h1>
-=======
-    <h1>Report a Community Issue</h1>
+    <p>Report community issues and track their status</p>
+</header>
+
+<div class="container">
+
+    <!-- =======================
+         Request Submission Form
+    ======================== -->
     <form id="requestForm">
-        <input type="text" name="name" placeholder="Your Name" required><br>
-        <input type="text" name="contact" placeholder="Contact Info" required><br>
-        <select name="issue_type" required>
-            <option value="">Select Issue</option>
-            <option value="Broken Roads">Broken Roads</option>
-            <option value="Street Lights">Street Lights Not Working</option>
-            <option value="Water Issues">Water Issues</option>
+        <h2>Submit a Request</h2>
+
+        <label for="name">Your Name</label>
+        <input type="text" id="name" name="name" required>
+
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required>
+
+        <label for="type">Issue Type</label>
+        <select id="type" name="type" required>
+            <option value="">Select an issue</option>
+            <option value="Broken road">Broken Road</option>
+            <option value="Street light">Street Light Not Working</option>
+            <option value="Water">Water Issue</option>
             <option value="Garbage">Garbage Not Collected</option>
-            <option value="Noise Disturbance">Noise Disturbance</option>
-            <option value="Lost & Found">Lost & Found Items</option>
-        </select><br>
-        <input type="text" name="location" placeholder="Location" required><br>
-        <textarea name="description" placeholder="Description"></textarea><br>
+            <option value="Noise">Noise Disturbance</option>
+            <option value="Lost item">Lost & Found Item</option>
+        </select>
+
+        <label for="description">Description</label>
+        <textarea id="description" name="description" rows="4" required></textarea>
+
         <button type="submit">Submit Request</button>
     </form>
 
-    <div id="response"></div>
-
-    <script src="js/main.js"></script>
-</body>
-</html>
->>>>>>> 1a6eb81 (Full working progress: backend + frontend integration, database connected, request submission working)
-
-    <form id="reportForm">
-        <input type="text" id="name" placeholder="Your Name" required>
-        <input type="text" id="contact" placeholder="Contact Info" required>
-        <select id="issueType" required>
-            <option value="">Select Issue</option>
-            <option value="Broken Road">Broken Road</option>
-            <option value="Street Light">Street Light</option>
-            <option value="Water Issue">Water Issue</option>
-            <option value="Garbage">Garbage</option>
-            <option value="Noise">Noise</option>
-            <option value="Lost/Found">Lost/Found</option>
-        </select>
-        <input type="text" id="location" placeholder="Location" required>
-        <textarea id="description" placeholder="Description"></textarea>
-        <button type="submit">Submit</button>
-    </form>
-
+    <!-- =======================
+         Requests Table
+    ======================== -->
     <h2>All Requests</h2>
-    <div id="requestsList"></div>
+    <table id="requestsTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Issue Type</th>
+                <th>Description</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Requests will be inserted here dynamically -->
+        </tbody>
+    </table>
 
-    <script src="js/main.js"></script>
+</div>
+
+<footer>
+    &copy; 2025 Smart Citizen System
+</footer>
+
+<script src="js/main.js"></script>
 </body>
 </html>
