@@ -7,7 +7,6 @@ const mysql = require('mysql2');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { Parser } = require('json2csv');
 
 const app = express();
 const PORT = 3000;
@@ -301,6 +300,25 @@ app.get('/api/requests/:id', authenticateToken, async (req, res) => {
     }
 });
 
+// SCRS-014: Cancel/withdraw request
+app.put('/api/requests/:id/cancel', authenticateToken, async (req, res) => {
+    try {
+        const [request] = await query('SELECT id, status, citizen_id FROM requests WHERE id = ?', [req.params.id]);
+        if (!request) return res.status(404).json({ success: false, message: 'Request not found' });
+        if (request.citizen_id !== req.user.userId && req.user.role === 'citizen') {
+            return res.status(403).json({ success: false, message: 'Not authorized' });
+        }
+        if (request.status !== 'open') {
+            return res.status(400).json({ success: false, message: 'Only open requests can be cancelled' });
+        }
+        await query('UPDATE requests SET status = "rejected", updated_at = NOW() WHERE id = ?', [req.params.id]);
+        await query('INSERT INTO request_timeline (request_id, user_id, action, old_status, new_status, comment) VALUES (?, ?, "cancelled", ?, "rejected", "Request cancelled by user")', [req.params.id, req.user.userId, request.status]);
+        res.json({ success: true, message: 'Request cancelled successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 // Get attachments for a request
 app.get('/api/requests/:id/attachments', authenticateToken, async (req, res) => {
     try {
@@ -309,88 +327,6 @@ app.get('/api/requests/:id/attachments', authenticateToken, async (req, res) => 
             [req.params.id]
         );
         res.json({ success: true, attachments });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-// SCRS-014: Cancel/withdraw request
-app.put('/api/requests/:id/cancel', authenticateToken, async (req, res) => {
-    try {
-        const [request] = await query(
-            'SELECT id, status, citizen_id FROM requests WHERE id = ?',
-            [req.params.id]
-        );
-        
-        if (!request) {
-            return res.status(404).json({ success: false, message: 'Request not found' });
-        }
-        
-        if (request.citizen_id !== req.user.userId && req.user.role === 'citizen') {
-            return res.status(403).json({ success: false, message: 'Not authorized to cancel this request' });
-        }
-        
-        if (request.status !== 'open') {
-            return res.status(400).json({ success: false, message: 'Only open requests can be cancelled' });
-        }
-        
-        await query(
-            'UPDATE requests SET status = "rejected", updated_at = NOW() WHERE id = ?',
-            [req.params.id]
-        );
-        
-        res.json({ success: true, message: 'Request cancelled successfully' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-// SCRS-015: Rate and review resolved request
-app.post('/api/requests/:id/rate', authenticateToken, async (req, res) => {
-    try {
-        const { rating, review } = req.body;
-        const requestId = req.params.id;
-        
-        if (rating < 1 || rating > 5) {
-            return res.status(400).json({ success: false, message: 'Rating must be between 1 and 5' });
-        }
-        
-        const [request] = await query(
-            'SELECT id, status, citizen_id FROM requests WHERE id = ?',
-            [requestId]
-        );
-        
-        if (!request) {
-            return res.status(404).json({ success: false, message: 'Request not found' });
-        }
-        
-        if (request.citizen_id !== req.user.userId) {
-            return res.status(403).json({ success: false, message: 'You can only rate your own requests' });
-        }
-        
-        if (request.status !== 'resolved') {
-            return res.status(400).json({ success: false, message: 'Only resolved requests can be rated' });
-        }
-        
-        // Create ratings table if not exists
-        await query(`CREATE TABLE IF NOT EXISTS request_ratings (
-            id INT PRIMARY KEY AUTO_INCREMENT,
-            request_id INT NOT NULL UNIQUE,
-            user_id INT NOT NULL,
-            rating INT NOT NULL,
-            review TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )`);
-        
-        await query(
-            `INSERT INTO request_ratings (request_id, user_id, rating, review) 
-             VALUES (?, ?, ?, ?) 
-             ON DUPLICATE KEY UPDATE rating = ?, review = ?`,
-            [requestId, req.user.userId, rating, review, rating, review]
-        );
-        
-        res.json({ success: true, message: 'Thank you for your feedback!' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -459,6 +395,272 @@ app.get('/api/admin/stats', authenticateToken, async (req, res) => {
                 resolved: resolved[0].count
             }
         });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Start server
+app.listen(PORT, () => {
+    console.log('\n🚀 =====================================');
+    console.log('SCRS Backend Server Running!');
+    console.log('=====================================');
+    console.log(`📍 URL: http://localhost:${PORT}`);
+    console.log(`📝 Health: http://localhost:${PORT}/health`);
+    console.log('\n✅ File upload enabled!');
+    console.log('=====================================\n');
+});
+
+module.exports = app;
+
+// SCRS-015: Rate and review resolved request
+app.post('/api/requests/:id/rate', authenticateToken, async (req, res) => {
+    try {
+        const { rating, review } = req.body;
+        const requestId = req.params.id;
+        
+        if (rating < 1 || rating > 5) {
+            return res.status(400).json({ success: false, message: 'Rating must be between 1 and 5' });
+        }
+        
+        const [request] = await query(
+            'SELECT id, status, citizen_id FROM requests WHERE id = ?',
+            [requestId]
+        );
+        
+        if (!request) {
+            return res.status(404).json({ success: false, message: 'Request not found' });
+        }
+        
+        if (request.citizen_id !== req.user.userId) {
+            return res.status(403).json({ success: false, message: 'You can only rate your own requests' });
+        }
+        
+        if (request.status !== 'resolved') {
+            return res.status(400).json({ success: false, message: 'Only resolved requests can be rated' });
+        }
+        
+        // Insert or update rating
+        await query(
+            `INSERT INTO request_ratings (request_id, user_id, rating, review) 
+             VALUES (?, ?, ?, ?) 
+             ON DUPLICATE KEY UPDATE rating = ?, review = ?`,
+            [requestId, req.user.userId, rating, review, rating, review]
+        );
+        
+        // Update average rating in requests table
+        await query(
+            `UPDATE requests r 
+             SET rating = (SELECT AVG(rating) FROM request_ratings WHERE request_id = ?)
+             WHERE r.id = ?`,
+            [requestId, requestId]
+        );
+        
+        res.json({ success: true, message: 'Thank you for your feedback!' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Get average rating for department
+app.get('/api/admin/department-rating', authenticateToken, async (req, res) => {
+    try {
+        const ratings = await query(
+            `SELECT d.name as department, AVG(rr.rating) as avg_rating, COUNT(rr.id) as total_reviews
+             FROM departments d
+             JOIN categories c ON c.department_id = d.id
+             JOIN requests r ON r.category_id = c.id
+             JOIN request_ratings rr ON rr.request_id = r.id
+             GROUP BY d.id`
+        );
+        res.json({ success: true, ratings });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// SCRS-021: Search requests with filters
+app.get('/api/admin/requests/search', authenticateToken, async (req, res) => {
+    const adminRoles = ['super_admin', 'department_admin', 'field_officer'];
+    if (!adminRoles.includes(req.user.role)) {
+        return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+    
+    try {
+        const { status, category, priority, date_from, date_to, search } = req.query;
+        let sql = `
+            SELECT r.*, c.name as category_name, u.full_name as citizen_name, u.email as citizen_email
+            FROM requests r 
+            JOIN categories c ON r.category_id = c.id 
+            JOIN users u ON r.citizen_id = u.id 
+            WHERE 1=1
+        `;
+        const params = [];
+        
+        if (status) {
+            sql += ' AND r.status = ?';
+            params.push(status);
+        }
+        if (category) {
+            sql += ' AND r.category_id = ?';
+            params.push(category);
+        }
+        if (priority) {
+            sql += ' AND r.priority = ?';
+            params.push(priority);
+        }
+        if (date_from) {
+            sql += ' AND DATE(r.created_at) >= ?';
+            params.push(date_from);
+        }
+        if (date_to) {
+            sql += ' AND DATE(r.created_at) <= ?';
+            params.push(date_to);
+        }
+        if (search) {
+            sql += ' AND (r.reference_number LIKE ? OR r.title LIKE ? OR u.full_name LIKE ?)';
+            const searchTerm = `%${search}%`;
+            params.push(searchTerm, searchTerm, searchTerm);
+        }
+        
+        sql += ' ORDER BY r.created_at DESC';
+        
+        const requests = await query(sql, params);
+        res.json({ success: true, requests });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+const { Parser } = require('json2csv');
+
+// SCRS-024: Export requests to CSV
+app.get('/api/admin/export/csv', authenticateToken, async (req, res) => {
+    const adminRoles = ['super_admin', 'department_admin'];
+    if (!adminRoles.includes(req.user.role)) {
+        return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+    
+    try {
+        const requests = await query(
+            `SELECT r.reference_number, r.title, r.description, r.status, r.priority, 
+             r.created_at, r.resolved_at, c.name as category, u.full_name as citizen_name
+             FROM requests r
+             JOIN categories c ON r.category_id = c.id
+             JOIN users u ON r.citizen_id = u.id
+             ORDER BY r.created_at DESC`
+        );
+        
+        const fields = ['reference_number', 'title', 'description', 'status', 'priority', 
+                       'category', 'citizen_name', 'created_at', 'resolved_at'];
+        const parser = new Parser({ fields });
+        const csv = parser.parse(requests);
+        
+        res.header('Content-Type', 'text/csv');
+        res.attachment(`scrs_export_${Date.now()}.csv`);
+        res.send(csv);
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// SCRS-022: Update priority for urgent requests
+app.put('/api/admin/requests/:id/priority', authenticateToken, async (req, res) => {
+    const adminRoles = ['super_admin', 'department_admin', 'field_officer'];
+    if (!adminRoles.includes(req.user.role)) {
+        return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+    
+    try {
+        const { priority } = req.body;
+        const validPriorities = ['low', 'medium', 'high', 'urgent'];
+        
+        if (!validPriorities.includes(priority)) {
+            return res.status(400).json({ success: false, message: 'Invalid priority' });
+        }
+        
+        await query(
+            'UPDATE requests SET priority = ?, updated_at = NOW() WHERE id = ?',
+            [priority, req.params.id]
+        );
+        
+        // If urgent, notify assigned officer (SMS/email would go here)
+        if (priority === 'urgent') {
+            console.log(`🚨 Urgent request #${req.params.id} flagged for immediate attention`);
+        }
+        
+        res.json({ success: true, message: `Priority updated to ${priority}` });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// SCRS-014: Cancel/withdraw request
+app.put('/api/requests/:id/cancel', authenticateToken, async (req, res) => {
+    try {
+        const [request] = await query(
+            'SELECT id, status, citizen_id FROM requests WHERE id = ?',
+            [req.params.id]
+        );
+        
+        if (!request) {
+            return res.status(404).json({ success: false, message: 'Request not found' });
+        }
+        
+        if (request.citizen_id !== req.user.userId && req.user.role === 'citizen') {
+            return res.status(403).json({ success: false, message: 'Not authorized to cancel this request' });
+        }
+        
+        if (request.status !== 'open') {
+            return res.status(400).json({ success: false, message: 'Only open requests can be cancelled' });
+        }
+        
+        await query(
+            'UPDATE requests SET status = "rejected", updated_at = NOW() WHERE id = ?',
+            [req.params.id]
+        );
+        
+        res.json({ success: true, message: 'Request cancelled successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// SCRS-015: Rate and review resolved request
+app.post('/api/requests/:id/rate', authenticateToken, async (req, res) => {
+    try {
+        const { rating, review } = req.body;
+        const requestId = req.params.id;
+        
+        if (rating < 1 || rating > 5) {
+            return res.status(400).json({ success: false, message: 'Rating must be between 1 and 5' });
+        }
+        
+        const [request] = await query(
+            'SELECT id, status, citizen_id FROM requests WHERE id = ?',
+            [requestId]
+        );
+        
+        if (!request) {
+            return res.status(404).json({ success: false, message: 'Request not found' });
+        }
+        
+        if (request.citizen_id !== req.user.userId) {
+            return res.status(403).json({ success: false, message: 'You can only rate your own requests' });
+        }
+        
+        if (request.status !== 'resolved') {
+            return res.status(400).json({ success: false, message: 'Only resolved requests can be rated' });
+        }
+        
+        await query(
+            `INSERT INTO request_ratings (request_id, user_id, rating, review) 
+             VALUES (?, ?, ?, ?) 
+             ON DUPLICATE KEY UPDATE rating = ?, review = ?`,
+            [requestId, req.user.userId, rating, review, rating, review]
+        );
+        
+        res.json({ success: true, message: 'Thank you for your feedback!' });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -548,6 +750,8 @@ app.put('/api/admin/requests/:id/priority', authenticateToken, async (req, res) 
 });
 
 // SCRS-024: Export requests to CSV
+const { Parser } = require('json2csv');
+
 app.get('/api/admin/export/csv', authenticateToken, async (req, res) => {
     const adminRoles = ['super_admin', 'department_admin'];
     if (!adminRoles.includes(req.user.role)) {
@@ -576,404 +780,3 @@ app.get('/api/admin/export/csv', authenticateToken, async (req, res) => {
         res.status(500).json({ success: false, message: error.message });
     }
 });
-
-// Start server
-app.listen(PORT, () => {
-    console.log('\n🚀 =====================================');
-    console.log('SCRS Backend Server Running!');
-    console.log('=====================================');
-    console.log(`📍 URL: http://localhost:${PORT}`);
-    console.log(`📝 Health: http://localhost:${PORT}/health`);
-    console.log('\n✅ All features enabled:');
-    console.log('   - File upload (up to 5 photos)');
-    console.log('   - Cancel requests');
-    console.log('   - Rating system');
-    console.log('   - Search & filters');
-    console.log('   - Priority management');
-    console.log('   - CSV export');
-    console.log('=====================================\n');
-});
-
-module.exports = app;
-
-// SCRS-004: Forgot password - Request reset
-app.post('/api/auth/forgot-password', async (req, res) => {
-    try {
-        const { email } = req.body;
-        
-        // Check if user exists
-        const [user] = await query('SELECT id, email, full_name FROM users WHERE email = ?', [email]);
-        if (!user) {
-            // For security, don't reveal if email exists
-            return res.json({ success: true, message: 'If your email exists, you will receive a reset link' });
-        }
-        
-        // Generate reset token
-        const resetToken = crypto.randomBytes(32).toString('hex');
-        const expiresAt = new Date(Date.now() + 3600000); // 1 hour
-        
-        // Save reset token
-        await query(
-            'INSERT INTO password_resets (email, token, expires_at) VALUES (?, ?, ?)',
-            [email, resetToken, expiresAt]
-        );
-        
-        // In production, send email with reset link
-        const resetLink = `http://localhost:8000/reset-password.html?token=${resetToken}`;
-        console.log(`📧 Password reset link for ${email}: ${resetLink}`);
-        
-        res.json({ 
-            success: true, 
-            message: 'Password reset link sent to your email',
-            resetToken: resetToken // Remove in production
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-// SCRS-004: Reset password with token
-app.post('/api/auth/reset-password', async (req, res) => {
-    try {
-        const { token, new_password } = req.body;
-        
-        // Verify token
-        const [reset] = await query(
-            'SELECT * FROM password_resets WHERE token = ? AND used = FALSE AND expires_at > NOW()',
-            [token]
-        );
-        
-        if (!reset) {
-            return res.status(400).json({ success: false, message: 'Invalid or expired reset token' });
-        }
-        
-        // Hash new password
-        const hashedPassword = await bcrypt.hash(new_password, 10);
-        
-        // Update user password
-        await query('UPDATE users SET password_hash = ? WHERE email = ?', [hashedPassword, reset.email]);
-        
-        // Mark token as used
-        await query('UPDATE password_resets SET used = TRUE WHERE token = ?', [token]);
-        
-        res.json({ success: true, message: 'Password reset successfully. You can now login with your new password.' });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-// SCRS-018: Assign request to department/officer
-app.put('/api/admin/requests/:id/assign', authenticateToken, async (req, res) => {
-    const adminRoles = ['super_admin', 'department_admin'];
-    if (!adminRoles.includes(req.user.role)) {
-        return res.status(403).json({ success: false, message: 'Admin access required' });
-    }
-    
-    try {
-        const { assigned_to, department_id } = req.body;
-        
-        if (assigned_to) {
-            // Verify user exists and is an officer
-            const [officer] = await query(
-                'SELECT id, full_name FROM users WHERE id = ? AND role IN ("field_officer", "department_admin")',
-                [assigned_to]
-            );
-            if (!officer) {
-                return res.status(400).json({ success: false, message: 'Invalid officer' });
-            }
-        }
-        
-        await query(
-            'UPDATE requests SET assigned_to = ?, assigned_department_id = ?, updated_at = NOW() WHERE id = ?',
-            [assigned_to || null, department_id || null, req.params.id]
-        );
-        
-        res.json({ success: true, message: 'Request assigned successfully' });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-// SCRS-020: Add internal notes and public comments
-app.post('/api/requests/:id/notes', authenticateToken, async (req, res) => {
-    try {
-        const { note, is_public } = req.body;
-        const requestId = req.params.id;
-        
-        // Check if user has access to this request
-        const [request] = await query('SELECT citizen_id FROM requests WHERE id = ?', [requestId]);
-        if (!request) {
-            return res.status(404).json({ success: false, message: 'Request not found' });
-        }
-        
-        const isOwner = request.citizen_id === req.user.userId;
-        const isAdmin = ['super_admin', 'department_admin', 'field_officer'].includes(req.user.role);
-        
-        if (!isOwner && !isAdmin) {
-            return res.status(403).json({ success: false, message: 'Access denied' });
-        }
-        
-        await query(
-            `INSERT INTO request_notes (request_id, user_id, note, is_internal) 
-             VALUES (?, ?, ?, ?)`,
-            [requestId, req.user.userId, note, !is_public]
-        );
-        
-        res.json({ success: true, message: 'Note added successfully' });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-// Get notes for a request
-app.get('/api/requests/:id/notes', authenticateToken, async (req, res) => {
-    try {
-        const requestId = req.params.id;
-        
-        const [request] = await query('SELECT citizen_id FROM requests WHERE id = ?', [requestId]);
-        if (!request) {
-            return res.status(404).json({ success: false, message: 'Request not found' });
-        }
-        
-        const isOwner = request.citizen_id === req.user.userId;
-        const isAdmin = ['super_admin', 'department_admin', 'field_officer'].includes(req.user.role);
-        
-        let notes;
-        if (isAdmin) {
-            // Admin sees all notes
-            notes = await query(
-                `SELECT n.*, u.full_name as user_name, u.role 
-                 FROM request_notes n 
-                 JOIN users u ON n.user_id = u.id 
-                 WHERE n.request_id = ? 
-                 ORDER BY n.created_at DESC`,
-                [requestId]
-            );
-        } else {
-            // Citizen only sees public notes
-            notes = await query(
-                `SELECT n.*, u.full_name as user_name 
-                 FROM request_notes n 
-                 JOIN users u ON n.user_id = u.id 
-                 WHERE n.request_id = ? AND n.is_internal = FALSE 
-                 ORDER BY n.created_at DESC`,
-                [requestId]
-            );
-        }
-        
-        res.json({ success: true, notes });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-// SCRS-016: Get user notifications
-app.get('/api/notifications', authenticateToken, async (req, res) => {
-    try {
-        const { limit = 50, unread_only = false } = req.query;
-        
-        let query_str = 'SELECT * FROM notifications WHERE user_id = ?';
-        const params = [req.user.userId];
-        
-        if (unread_only === 'true') {
-            query_str += ' AND is_read = FALSE';
-        }
-        
-        query_str += ' ORDER BY created_at DESC LIMIT ?';
-        params.push(parseInt(limit));
-        
-        const notifications = await query(query_str, params);
-        res.json({ success: true, notifications });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-// Mark notification as read
-app.put('/api/notifications/:id/read', authenticateToken, async (req, res) => {
-    try {
-        await query(
-            'UPDATE notifications SET is_read = TRUE WHERE id = ? AND user_id = ?',
-            [req.params.id, req.user.userId]
-        );
-        res.json({ success: true, message: 'Notification marked as read' });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-// Mark all notifications as read
-app.put('/api/notifications/read-all', authenticateToken, async (req, res) => {
-    try {
-        await query(
-            'UPDATE notifications SET is_read = TRUE WHERE user_id = ?',
-            [req.user.userId]
-        );
-        res.json({ success: true, message: 'All notifications marked as read' });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-// Helper function to create notification
-async function createNotification(userId, type, title, message, link = null) {
-    try {
-        await query(
-            'INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, ?, ?, ?, ?)',
-            [userId, type, title, message, link]
-        );
-    } catch (error) {
-        console.error('Failed to create notification:', error);
-    }
-}
-
-// Export for use in other endpoints
-global.createNotification = createNotification;
-
-// SCRS-029: Set SLA time per category
-app.put('/api/admin/categories/:id/sla', authenticateToken, async (req, res) => {
-    if (req.user.role !== 'super_admin') {
-        return res.status(403).json({ success: false, message: 'Super admin only' });
-    }
-    
-    try {
-        const { sla_hours } = req.body;
-        await query('UPDATE categories SET sla_hours = ? WHERE id = ?', [sla_hours, req.params.id]);
-        res.json({ success: true, message: 'SLA updated successfully' });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-// SCRS-030: Analytics dashboard with charts
-app.get('/api/admin/analytics', authenticateToken, async (req, res) => {
-    const adminRoles = ['super_admin', 'department_admin'];
-    if (!adminRoles.includes(req.user.role)) {
-        return res.status(403).json({ success: false, message: 'Admin access required' });
-    }
-    
-    try {
-        // Daily requests for last 30 days
-        const dailyRequests = await query(`
-            SELECT DATE(created_at) as date, COUNT(*) as count 
-            FROM requests 
-            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-            GROUP BY DATE(created_at)
-            ORDER BY date
-        `);
-        
-        // Requests by category
-        const byCategory = await query(`
-            SELECT c.name, COUNT(r.id) as count 
-            FROM categories c
-            LEFT JOIN requests r ON c.id = r.category_id
-            GROUP BY c.id
-        `);
-        
-        // Average resolution time by category
-        const avgResolution = await query(`
-            SELECT c.name, AVG(TIMESTAMPDIFF(HOUR, r.created_at, r.resolved_at)) as avg_hours
-            FROM requests r
-            JOIN categories c ON r.category_id = c.id
-            WHERE r.status = 'resolved' AND r.resolved_at IS NOT NULL
-            GROUP BY c.id
-        `);
-        
-        // SLA compliance rate
-        const slaCompliance = await query(`
-            SELECT 
-                COUNT(CASE WHEN r.status = 'resolved' AND TIMESTAMPDIFF(HOUR, r.created_at, r.resolved_at) <= c.sla_hours THEN 1 END) as compliant,
-                COUNT(CASE WHEN r.status = 'resolved' AND TIMESTAMPDIFF(HOUR, r.created_at, r.resolved_at) > c.sla_hours THEN 1 END) as breached,
-                COUNT(*) as total_resolved
-            FROM requests r
-            JOIN categories c ON r.category_id = c.id
-            WHERE r.status = 'resolved'
-        `);
-        
-        // Requests by priority
-        const byPriority = await query(`
-            SELECT priority, COUNT(*) as count 
-            FROM requests 
-            GROUP BY priority
-        `);
-        
-        // Monthly trend
-        const monthlyTrend = await query(`
-            SELECT DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as count
-            FROM requests
-            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-            GROUP BY DATE_FORMAT(created_at, '%Y-%m')
-            ORDER BY month DESC
-        `);
-        
-        res.json({
-            success: true,
-            analytics: {
-                dailyRequests,
-                byCategory,
-                avgResolution,
-                slaCompliance: {
-                    compliant: slaCompliance[0]?.compliant || 0,
-                    breached: slaCompliance[0]?.breached || 0,
-                    rate: slaCompliance[0]?.total_resolved > 0 
-                        ? ((slaCompliance[0].compliant / slaCompliance[0].total_resolved) * 100).toFixed(2)
-                        : 0
-                },
-                byPriority,
-                monthlyTrend
-            }
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-// SCRS-031: SLA breach alerts
-app.get('/api/admin/sla-breaches', authenticateToken, async (req, res) => {
-    const adminRoles = ['super_admin', 'department_admin'];
-    if (!adminRoles.includes(req.user.role)) {
-        return res.status(403).json({ success: false, message: 'Admin access required' });
-    }
-    
-    try {
-        // Find requests that have breached SLA
-        const breaches = await query(`
-            SELECT r.*, c.name as category_name, c.sla_hours,
-                   TIMESTAMPDIFF(HOUR, r.created_at, NOW()) as hours_passed,
-                   u.full_name as citizen_name
-            FROM requests r
-            JOIN categories c ON r.category_id = c.id
-            JOIN users u ON r.citizen_id = u.id
-            WHERE r.status IN ('open', 'in_progress')
-              AND TIMESTAMPDIFF(HOUR, r.created_at, NOW()) > c.sla_hours
-            ORDER BY hours_passed DESC
-        `);
-        
-        // Also check for approaching SLA (80% of SLA time)
-        const approaching = await query(`
-            SELECT r.*, c.name as category_name, c.sla_hours,
-                   TIMESTAMPDIFF(HOUR, r.created_at, NOW()) as hours_passed,
-                   ROUND((TIMESTAMPDIFF(HOUR, r.created_at, NOW()) / c.sla_hours) * 100, 1) as percentage_used
-            FROM requests r
-            JOIN categories c ON r.category_id = c.id
-            WHERE r.status IN ('open', 'in_progress')
-              AND TIMESTAMPDIFF(HOUR, r.created_at, NOW()) > (c.sla_hours * 0.8)
-              AND TIMESTAMPDIFF(HOUR, r.created_at, NOW()) <= c.sla_hours
-            ORDER BY percentage_used DESC
-        `);
-        
-        res.json({
-            success: true,
-            breached: breaches,
-            approaching_sla: approaching
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-// Update request status to also track SLA
-// Override the status update endpoint
-const originalStatusUpdate = app.put;
-// Add SLA tracking to status update
-console.log('✅ SLA and Analytics endpoints added');

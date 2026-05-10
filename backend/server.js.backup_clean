@@ -1,0 +1,595 @@
+const express = require('express');
+const bodyParser = require('body-parser');
+const cors = require('cors');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const mysql = require('mysql2');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+const app = express();
+const PORT = 3000;
+const JWT_SECRET = 'scrs_secret_key_2026';
+
+// Middleware
+app.use(cors());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// Create uploads directory if it doesn't exist
+if (!fs.existsSync('uploads')) {
+    fs.mkdirSync('uploads');
+}
+
+// Serve uploaded files
+app.use('/uploads', express.static('uploads'));
+
+// Database connection
+const db = mysql.createConnection({
+    host: 'localhost',
+    user: 'samuel',
+    password: 'Samuel@2025!',
+    database: 'smart_city'
+});
+
+db.connect((err) => {
+    if (err) {
+        console.error('❌ Database connection failed:', err.message);
+    } else {
+        console.log('✅ Connected to MySQL database');
+    }
+});
+
+// Promisify db query
+const query = (sql, params) => {
+    return new Promise((resolve, reject) => {
+        db.query(sql, params, (err, results) => {
+            if (err) reject(err);
+            else resolve(results);
+        });
+    });
+};
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/')
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const fileFilter = (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif'];
+    if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error('Invalid file type. Only JPEG, PNG, GIF are allowed.'), false);
+    }
+};
+
+const upload = multer({ 
+    storage: storage,
+    limits: { fileSize: 5 * 1024 * 1024 },
+    fileFilter: fileFilter
+});
+
+// ============ PUBLIC ENDPOINTS ============
+
+app.get('/health', (req, res) => {
+    res.json({ status: 'OK', timestamp: new Date() });
+});
+
+app.get('/api/categories', async (req, res) => {
+    try {
+        const categories = await query('SELECT * FROM categories WHERE is_active = 1');
+        res.json({ success: true, categories });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+app.post('/api/auth/register', async (req, res) => {
+    try {
+        const { email, phone, password, full_name, national_id } = req.body;
+        
+        const existing = await query('SELECT id FROM users WHERE email = ? OR phone = ?', [email, phone]);
+        if (existing.length > 0) {
+            return res.status(400).json({ success: false, message: 'User already exists' });
+        }
+        
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        const result = await query(
+            'INSERT INTO users (email, phone, password_hash, full_name, national_id, otp_code, otp_expires_at) VALUES (?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE))',
+            [email, phone, hashedPassword, full_name, national_id, otp]
+        );
+        
+        res.status(201).json({
+            success: true,
+            message: 'Registration successful',
+            userId: result.insertId,
+            otp: otp
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+app.post('/api/auth/verify-otp', async (req, res) => {
+    try {
+        const { email, otp } = req.body;
+        
+        const users = await query('SELECT id, otp_code, otp_expires_at FROM users WHERE email = ?', [email]);
+        if (users.length === 0) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        
+        const user = users[0];
+        if (user.otp_code !== otp) {
+            return res.status(400).json({ success: false, message: 'Invalid OTP' });
+        }
+        
+        if (new Date() > new Date(user.otp_expires_at)) {
+            return res.status(400).json({ success: false, message: 'OTP expired' });
+        }
+        
+        await query('UPDATE users SET is_verified = 1, otp_code = NULL, otp_expires_at = NULL WHERE id = ?', [user.id]);
+        res.json({ success: true, message: 'Account verified successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        
+        const users = await query('SELECT id, email, password_hash, full_name, role, is_active FROM users WHERE email = ?', [email]);
+        if (users.length === 0) {
+            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+        
+        const user = users[0];
+        if (!user.is_active) {
+            return res.status(401).json({ success: false, message: 'Account deactivated' });
+        }
+        
+        const validPassword = await bcrypt.compare(password, user.password_hash);
+        if (!validPassword) {
+            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+        
+        const token = jwt.sign(
+            { userId: user.id, email: user.email, role: user.role }, 
+            JWT_SECRET, 
+            { expiresIn: '7d' }
+        );
+        
+        await query('UPDATE users SET last_login = NOW() WHERE id = ?', [user.id]);
+        
+        res.json({
+            success: true,
+            token,
+            user: { 
+                id: user.id, 
+                email: user.email, 
+                full_name: user.full_name, 
+                role: user.role 
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Authentication middleware
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    
+    if (!token) {
+        return res.status(401).json({ success: false, message: 'Token required' });
+    }
+    
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ success: false, message: 'Invalid token' });
+        }
+        req.user = user;
+        next();
+    });
+};
+
+// ============ PROTECTED ENDPOINTS ============
+
+// Submit a new request with file upload
+app.post('/api/requests', authenticateToken, upload.array('attachments', 5), async (req, res) => {
+    try {
+        const { category_id, title, description, location_address, location_lat, location_lng, is_anonymous, priority } = req.body;
+        
+        if (!category_id) {
+            return res.status(400).json({ success: false, message: 'Category is required' });
+        }
+        
+        const refNum = 'SCR' + Date.now().toString().slice(-8) + Math.floor(Math.random() * 1000);
+        
+        const result = await query(
+            `INSERT INTO requests (reference_number, citizen_id, category_id, title, description, 
+             location_address, location_latitude, location_longitude, is_anonymous, priority, status) 
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'open')`,
+            [
+                refNum, 
+                req.user.userId, 
+                category_id, 
+                title || 'No title provided', 
+                description || 'No description provided', 
+                location_address || null, 
+                location_lat || null, 
+                location_lng || null, 
+                is_anonymous || 0, 
+                priority || 'medium'
+            ]
+        );
+        
+        const requestId = result.insertId;
+        if (req.files && req.files.length > 0) {
+            for (const file of req.files) {
+                const fileUrl = `/uploads/${file.filename}`;
+                await query(
+                    `INSERT INTO request_attachments (request_id, file_url, file_name, file_size, mime_type) 
+                     VALUES (?, ?, ?, ?, ?)`,
+                    [requestId, fileUrl, file.originalname, file.size, file.mimetype]
+                );
+            }
+        }
+        
+        res.status(201).json({
+            success: true,
+            message: 'Request submitted successfully',
+            reference_number: refNum,
+            requestId: requestId,
+            attachments: req.files?.length || 0
+        });
+    } catch (error) {
+        console.error('Submit error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Get my requests
+app.get('/api/requests/my-requests', authenticateToken, async (req, res) => {
+    try {
+        const requests = await query(
+            `SELECT r.*, c.name as category_name 
+             FROM requests r 
+             JOIN categories c ON r.category_id = c.id 
+             WHERE r.citizen_id = ? 
+             ORDER BY r.created_at DESC`,
+            [req.user.userId]
+        );
+        res.json({ success: true, requests });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Get single request
+app.get('/api/requests/:id', authenticateToken, async (req, res) => {
+    try {
+        const requests = await query(
+            `SELECT r.*, c.name as category_name, u.full_name as citizen_name 
+             FROM requests r 
+             JOIN categories c ON r.category_id = c.id 
+             JOIN users u ON r.citizen_id = u.id 
+             WHERE r.id = ?`,
+            [req.params.id]
+        );
+        
+        if (requests.length === 0) {
+            return res.status(404).json({ success: false, message: 'Request not found' });
+        }
+        
+        res.json({ success: true, request: requests[0] });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// SCRS-014: Cancel/withdraw request
+app.put('/api/requests/:id/cancel', authenticateToken, async (req, res) => {
+    try {
+        const [request] = await query('SELECT id, status, citizen_id FROM requests WHERE id = ?', [req.params.id]);
+        if (!request) return res.status(404).json({ success: false, message: 'Request not found' });
+        if (request.citizen_id !== req.user.userId && req.user.role === 'citizen') {
+            return res.status(403).json({ success: false, message: 'Not authorized' });
+        }
+        if (request.status !== 'open') {
+            return res.status(400).json({ success: false, message: 'Only open requests can be cancelled' });
+        }
+        await query('UPDATE requests SET status = "rejected", updated_at = NOW() WHERE id = ?', [req.params.id]);
+        await query('INSERT INTO request_timeline (request_id, user_id, action, old_status, new_status, comment) VALUES (?, ?, "cancelled", ?, "rejected", "Request cancelled by user")', [req.params.id, req.user.userId, request.status]);
+        res.json({ success: true, message: 'Request cancelled successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Get attachments for a request
+app.get('/api/requests/:id/attachments', authenticateToken, async (req, res) => {
+    try {
+        const attachments = await query(
+            'SELECT * FROM request_attachments WHERE request_id = ?',
+            [req.params.id]
+        );
+        res.json({ success: true, attachments });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// ============ ADMIN ENDPOINTS ============
+
+app.get('/api/admin/requests', authenticateToken, async (req, res) => {
+    const adminRoles = ['super_admin', 'department_admin', 'field_officer'];
+    if (!adminRoles.includes(req.user.role)) {
+        return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+    
+    try {
+        const requests = await query(
+            `SELECT r.*, c.name as category_name, u.full_name as citizen_name, u.email as citizen_email
+             FROM requests r 
+             JOIN categories c ON r.category_id = c.id 
+             JOIN users u ON r.citizen_id = u.id 
+             ORDER BY r.created_at DESC`
+        );
+        res.json({ success: true, requests });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+app.put('/api/admin/requests/:id/status', authenticateToken, async (req, res) => {
+    const adminRoles = ['super_admin', 'department_admin', 'field_officer'];
+    if (!adminRoles.includes(req.user.role)) {
+        return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+    
+    try {
+        const { status } = req.body;
+        
+        await query(
+            `UPDATE requests SET status = ?, updated_at = NOW() WHERE id = ?`,
+            [status, req.params.id]
+        );
+        
+        res.json({ success: true, message: 'Status updated successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+app.get('/api/admin/stats', authenticateToken, async (req, res) => {
+    const adminRoles = ['super_admin', 'department_admin'];
+    if (!adminRoles.includes(req.user.role)) {
+        return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+    
+    try {
+        const total = await query('SELECT COUNT(*) as count FROM requests');
+        const open = await query('SELECT COUNT(*) as count FROM requests WHERE status = "open"');
+        const inProgress = await query('SELECT COUNT(*) as count FROM requests WHERE status = "in_progress"');
+        const resolved = await query('SELECT COUNT(*) as count FROM requests WHERE status = "resolved"');
+        
+        res.json({
+            success: true,
+            stats: {
+                total: total[0].count,
+                open: open[0].count,
+                inProgress: inProgress[0].count,
+                resolved: resolved[0].count
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Start server
+app.listen(PORT, () => {
+    console.log('\n🚀 =====================================');
+    console.log('SCRS Backend Server Running!');
+    console.log('=====================================');
+    console.log(`📍 URL: http://localhost:${PORT}`);
+    console.log(`📝 Health: http://localhost:${PORT}/health`);
+    console.log('\n✅ File upload enabled!');
+    console.log('=====================================\n');
+});
+
+module.exports = app;
+
+// SCRS-015: Rate and review resolved request
+app.post('/api/requests/:id/rate', authenticateToken, async (req, res) => {
+    try {
+        const { rating, review } = req.body;
+        const requestId = req.params.id;
+        
+        if (rating < 1 || rating > 5) {
+            return res.status(400).json({ success: false, message: 'Rating must be between 1 and 5' });
+        }
+        
+        const [request] = await query(
+            'SELECT id, status, citizen_id FROM requests WHERE id = ?',
+            [requestId]
+        );
+        
+        if (!request) {
+            return res.status(404).json({ success: false, message: 'Request not found' });
+        }
+        
+        if (request.citizen_id !== req.user.userId) {
+            return res.status(403).json({ success: false, message: 'You can only rate your own requests' });
+        }
+        
+        if (request.status !== 'resolved') {
+            return res.status(400).json({ success: false, message: 'Only resolved requests can be rated' });
+        }
+        
+        // Insert or update rating
+        await query(
+            `INSERT INTO request_ratings (request_id, user_id, rating, review) 
+             VALUES (?, ?, ?, ?) 
+             ON DUPLICATE KEY UPDATE rating = ?, review = ?`,
+            [requestId, req.user.userId, rating, review, rating, review]
+        );
+        
+        // Update average rating in requests table
+        await query(
+            `UPDATE requests r 
+             SET rating = (SELECT AVG(rating) FROM request_ratings WHERE request_id = ?)
+             WHERE r.id = ?`,
+            [requestId, requestId]
+        );
+        
+        res.json({ success: true, message: 'Thank you for your feedback!' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Get average rating for department
+app.get('/api/admin/department-rating', authenticateToken, async (req, res) => {
+    try {
+        const ratings = await query(
+            `SELECT d.name as department, AVG(rr.rating) as avg_rating, COUNT(rr.id) as total_reviews
+             FROM departments d
+             JOIN categories c ON c.department_id = d.id
+             JOIN requests r ON r.category_id = c.id
+             JOIN request_ratings rr ON rr.request_id = r.id
+             GROUP BY d.id`
+        );
+        res.json({ success: true, ratings });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// SCRS-021: Search requests with filters
+app.get('/api/admin/requests/search', authenticateToken, async (req, res) => {
+    const adminRoles = ['super_admin', 'department_admin', 'field_officer'];
+    if (!adminRoles.includes(req.user.role)) {
+        return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+    
+    try {
+        const { status, category, priority, date_from, date_to, search } = req.query;
+        let sql = `
+            SELECT r.*, c.name as category_name, u.full_name as citizen_name, u.email as citizen_email
+            FROM requests r 
+            JOIN categories c ON r.category_id = c.id 
+            JOIN users u ON r.citizen_id = u.id 
+            WHERE 1=1
+        `;
+        const params = [];
+        
+        if (status) {
+            sql += ' AND r.status = ?';
+            params.push(status);
+        }
+        if (category) {
+            sql += ' AND r.category_id = ?';
+            params.push(category);
+        }
+        if (priority) {
+            sql += ' AND r.priority = ?';
+            params.push(priority);
+        }
+        if (date_from) {
+            sql += ' AND DATE(r.created_at) >= ?';
+            params.push(date_from);
+        }
+        if (date_to) {
+            sql += ' AND DATE(r.created_at) <= ?';
+            params.push(date_to);
+        }
+        if (search) {
+            sql += ' AND (r.reference_number LIKE ? OR r.title LIKE ? OR u.full_name LIKE ?)';
+            const searchTerm = `%${search}%`;
+            params.push(searchTerm, searchTerm, searchTerm);
+        }
+        
+        sql += ' ORDER BY r.created_at DESC';
+        
+        const requests = await query(sql, params);
+        res.json({ success: true, requests });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+const { Parser } = require('json2csv');
+
+// SCRS-024: Export requests to CSV
+app.get('/api/admin/export/csv', authenticateToken, async (req, res) => {
+    const adminRoles = ['super_admin', 'department_admin'];
+    if (!adminRoles.includes(req.user.role)) {
+        return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+    
+    try {
+        const requests = await query(
+            `SELECT r.reference_number, r.title, r.description, r.status, r.priority, 
+             r.created_at, r.resolved_at, c.name as category, u.full_name as citizen_name
+             FROM requests r
+             JOIN categories c ON r.category_id = c.id
+             JOIN users u ON r.citizen_id = u.id
+             ORDER BY r.created_at DESC`
+        );
+        
+        const fields = ['reference_number', 'title', 'description', 'status', 'priority', 
+                       'category', 'citizen_name', 'created_at', 'resolved_at'];
+        const parser = new Parser({ fields });
+        const csv = parser.parse(requests);
+        
+        res.header('Content-Type', 'text/csv');
+        res.attachment(`scrs_export_${Date.now()}.csv`);
+        res.send(csv);
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// SCRS-022: Update priority for urgent requests
+app.put('/api/admin/requests/:id/priority', authenticateToken, async (req, res) => {
+    const adminRoles = ['super_admin', 'department_admin', 'field_officer'];
+    if (!adminRoles.includes(req.user.role)) {
+        return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+    
+    try {
+        const { priority } = req.body;
+        const validPriorities = ['low', 'medium', 'high', 'urgent'];
+        
+        if (!validPriorities.includes(priority)) {
+            return res.status(400).json({ success: false, message: 'Invalid priority' });
+        }
+        
+        await query(
+            'UPDATE requests SET priority = ?, updated_at = NOW() WHERE id = ?',
+            [priority, req.params.id]
+        );
+        
+        // If urgent, notify assigned officer (SMS/email would go here)
+        if (priority === 'urgent') {
+            console.log(`🚨 Urgent request #${req.params.id} flagged for immediate attention`);
+        }
+        
+        res.json({ success: true, message: `Priority updated to ${priority}` });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
