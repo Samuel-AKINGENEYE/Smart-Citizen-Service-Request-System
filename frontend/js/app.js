@@ -1,10 +1,11 @@
-// Smart Citizen Request System - Main Application
+// Smart Citizen Request System - Production Frontend
 const API_URL = window.API_URL || 'https://scrs-backend.onrender.com/api';
 let authToken = localStorage.getItem('token');
 let currentUser = null;
 
-console.log('🚀 SCRS Frontend Starting...');
-console.log('🌐 API URL:', API_URL);
+console.log('🔧 SCRS Frontend v2.0 Loaded');
+console.log('📍 API URL:', API_URL);
+console.log('🔐 Token exists:', !!authToken);
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
@@ -16,34 +17,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// Test backend connection
-async function testConnection() {
-    try {
-        const response = await axios.get(API_URL.replace('/api', '') + '/health');
-        console.log('✅ Backend connected:', response.data);
-        return true;
-    } catch (error) {
-        console.error('❌ Backend connection failed:', error.message);
-        return false;
-    }
-}
-testConnection();
-
 // Load categories
 async function loadCategories() {
     try {
-        const response = await axios.get(`${API_URL}/categories`);
+        const res = await axios.get(`${API_URL}/categories`);
         const select = document.getElementById('req-category');
         if (select) {
             select.innerHTML = '<option value="">Select Category</option>' +
-                response.data.categories.map(cat => `<option value="${cat.id}">${cat.name}</option>`).join('');
+                res.data.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            console.log('Categories loaded:', res.data.categories.length);
         }
-    } catch (error) {
-        console.error('Error loading categories:', error);
+    } catch (err) {
+        console.error('Categories error:', err);
     }
 }
 
-// UI Functions
 function showLogin() {
     document.getElementById('login-form').classList.remove('hidden');
     document.getElementById('register-form').classList.add('hidden');
@@ -71,13 +59,13 @@ async function register(event) {
         national_id: 'TEMP' + Date.now()
     };
     try {
-        const response = await axios.post(`${API_URL}/auth/register`, data);
-        if (response.data.success) {
-            alert(`Registration successful! OTP: ${response.data.otp}`);
+        const res = await axios.post(`${API_URL}/auth/register`, data);
+        if (res.data.success) {
+            alert(`✅ Registration successful!\nYour OTP: ${res.data.otp}\nPlease verify your account.`);
             showLogin();
         }
-    } catch (error) {
-        alert('Registration failed: ' + (error.response?.data?.message || error.message));
+    } catch (err) {
+        alert('❌ Registration failed: ' + (err.response?.data?.message || err.message));
     }
 }
 
@@ -87,16 +75,17 @@ async function login(event) {
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
     try {
-        const response = await axios.post(`${API_URL}/auth/login`, { email, password });
-        if (response.data.success) {
-            authToken = response.data.token;
-            currentUser = response.data.user;
+        const res = await axios.post(`${API_URL}/auth/login`, { email, password });
+        if (res.data.success) {
+            authToken = res.data.token;
+            currentUser = res.data.user;
             localStorage.setItem('token', authToken);
             localStorage.setItem('user', JSON.stringify(currentUser));
+            console.log('Login successful:', currentUser);
             await loadUserData();
         }
-    } catch (error) {
-        alert('Login failed: ' + (error.response?.data?.message || error.message));
+    } catch (err) {
+        alert('❌ Login failed: ' + (err.response?.data?.message || err.message));
     }
 }
 
@@ -137,11 +126,11 @@ async function submitRequest(event) {
     }
     
     try {
-        const response = await axios.post(`${API_URL}/requests`, formData, {
+        const res = await axios.post(`${API_URL}/requests`, formData, {
             headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'multipart/form-data' }
         });
-        if (response.data.success) {
-            alert(`✅ Request submitted! Reference: ${response.data.reference_number}`);
+        if (res.data.success) {
+            alert(`✅ Request submitted!\nReference: ${res.data.reference_number}`);
             document.getElementById('req-title').value = '';
             document.getElementById('req-description').value = '';
             document.getElementById('req-location').value = '';
@@ -149,72 +138,73 @@ async function submitRequest(event) {
             document.getElementById('image-preview').innerHTML = '';
             loadMyRequests();
         }
-    } catch (error) {
-        alert('Failed: ' + (error.response?.data?.message || error.message));
+    } catch (err) {
+        alert('❌ Failed: ' + (err.response?.data?.message || err.message));
     }
 }
 
 // Load my requests
 async function loadMyRequests() {
     try {
-        const response = await axios.get(`${API_URL}/requests/my-requests`, {
+        const res = await axios.get(`${API_URL}/requests/my-requests`, {
             headers: { Authorization: `Bearer ${authToken}` }
         });
-        const requests = response.data.requests;
+        const requests = res.data.requests;
         const container = document.getElementById('requests-list');
         if (!requests || requests.length === 0) {
-            container.innerHTML = '<p class="text-gray-500 text-center">No requests yet</p>';
+            container.innerHTML = '<p class="text-center text-gray-500 py-8">No requests yet</p>';
             return;
         }
         container.innerHTML = requests.map(req => `
-            <div class="border rounded-lg p-4">
-                <div class="flex justify-between">
+            <div class="border rounded-lg p-4 hover:shadow-md transition">
+                <div class="flex justify-between items-start">
                     <div>
-                        <h4 class="font-bold">${req.title}</h4>
-                        <p class="text-sm text-gray-600">${req.description?.substring(0, 100)}</p>
-                        <span class="text-xs bg-gray-200 px-2 py-1 rounded mt-2 inline-block">${req.status}</span>
-                        <span class="text-xs bg-gray-200 px-2 py-1 rounded ml-2">${req.priority}</span>
-                        <p class="text-xs text-gray-500 mt-1">Ref: ${req.reference_number}</p>
+                        <h4 class="font-bold">${req.title || 'Request'}</h4>
+                        <p class="text-sm text-gray-600 mt-1">${req.description?.substring(0, 100)}</p>
+                        <div class="flex gap-2 mt-2">
+                            <span class="text-xs px-2 py-1 rounded ${req.status === 'open' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">${req.status}</span>
+                            <span class="text-xs px-2 py-1 rounded bg-gray-100">${req.priority}</span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">Ref: ${req.reference_number}</p>
                     </div>
                 </div>
             </div>
         `).join('');
-    } catch (error) {
-        console.error('Error:', error);
+    } catch (err) {
+        console.error('Error:', err);
+        document.getElementById('requests-list').innerHTML = '<p class="text-red-500 text-center">Error loading requests</p>';
     }
 }
 
 // Admin functions
 async function loadAdminStats() {
     try {
-        const response = await axios.get(`${API_URL}/admin/stats`, {
+        const res = await axios.get(`${API_URL}/admin/stats`, {
             headers: { Authorization: `Bearer ${authToken}` }
         });
-        const stats = response.data.stats;
-        document.getElementById('total-requests').textContent = stats.total || 0;
-        document.getElementById('open-requests').textContent = stats.open || 0;
-        document.getElementById('progress-requests').textContent = stats.inProgress || 0;
-        document.getElementById('resolved-requests').textContent = stats.resolved || 0;
-    } catch (error) {
-        console.error('Error loading stats:', error);
-    }
+        const s = res.data.stats;
+        document.getElementById('total-requests').textContent = s.total || 0;
+        document.getElementById('open-requests').textContent = s.open || 0;
+        document.getElementById('progress-requests').textContent = s.inProgress || 0;
+        document.getElementById('resolved-requests').textContent = s.resolved || 0;
+    } catch (err) { console.error('Stats error:', err); }
 }
 
 async function loadAllRequests() {
     try {
-        const response = await axios.get(`${API_URL}/admin/requests`, {
+        const res = await axios.get(`${API_URL}/admin/requests`, {
             headers: { Authorization: `Bearer ${authToken}` }
         });
-        const requests = response.data.requests;
+        const requests = res.data.requests;
         const container = document.getElementById('admin-requests-list');
         if (!requests || requests.length === 0) {
-            container.innerHTML = '<p class="text-center">No requests</p>';
+            container.innerHTML = '<p class="text-center py-8">No requests found</p>';
             return;
         }
         container.innerHTML = `
-            <table class="min-w-full">
+            <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
-                    <tr><th class="px-4 py-2">Ref</th><th>Citizen</th><th>Title</th><th>Status</th><th>Priority</th><th>Date</th></tr>
+                    <tr><th class="px-4 py-2 text-left">Ref</th><th class="px-4 py-2 text-left">Citizen</th><th class="px-4 py-2 text-left">Title</th><th class="px-4 py-2 text-left">Status</th><th class="px-4 py-2 text-left">Priority</th><th class="px-4 py-2 text-left">Date</th></tr>
                 </thead>
                 <tbody>
                     ${requests.map(req => `
@@ -227,6 +217,7 @@ async function loadAllRequests() {
                                     <option value="open" ${req.status === 'open' ? 'selected' : ''}>Open</option>
                                     <option value="in_progress" ${req.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
                                     <option value="resolved" ${req.status === 'resolved' ? 'selected' : ''}>Resolved</option>
+                                    <option value="rejected" ${req.status === 'rejected' ? 'selected' : ''}>Rejected</option>
                                 </select>
                             </td>
                             <td class="px-4 py-2">${req.priority}</td>
@@ -236,22 +227,18 @@ async function loadAllRequests() {
                 </tbody>
             </table>
         `;
-    } catch (error) {
-        console.error('Error:', error);
-    }
+    } catch (err) { console.error('Admin error:', err); }
 }
 
-window.updateStatus = async function(requestId, newStatus) {
+window.updateStatus = async function(id, status) {
     try {
-        await axios.put(`${API_URL}/admin/requests/${requestId}/status`, { status: newStatus }, {
+        await axios.put(`${API_URL}/admin/requests/${id}/status`, { status }, {
             headers: { Authorization: `Bearer ${authToken}` }
         });
-        alert('Status updated!');
+        alert('✅ Status updated');
         loadAllRequests();
         loadAdminStats();
-    } catch (error) {
-        alert('Failed to update status');
-    }
+    } catch (err) { alert('❌ Failed to update'); }
 };
 
 function logout() {
@@ -259,32 +246,29 @@ function logout() {
     authToken = null;
     currentUser = null;
     showLogin();
+    alert('Logged out');
 }
-
-// Make functions global
-window.showLogin = showLogin;
-window.showRegister = showRegister;
-window.login = login;
-window.register = register;
-window.submitRequest = submitRequest;
-window.logout = logout;
-window.updateStatus = updateStatus;
 
 // Image preview
 document.getElementById('req-photos')?.addEventListener('change', function(e) {
     const preview = document.getElementById('image-preview');
     preview.innerHTML = '';
-    const files = Array.from(e.target.files);
-    files.forEach(file => {
+    Array.from(e.target.files).forEach(file => {
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = (e) => {
             const img = document.createElement('img');
             img.src = e.target.result;
-            img.className = 'w-20 h-20 object-cover rounded border';
+            img.className = 'w-16 h-16 object-cover rounded border';
             preview.appendChild(img);
         };
         reader.readAsDataURL(file);
     });
 });
 
-console.log('✅ Frontend ready!');
+// Make global
+window.showLogin = showLogin;
+window.showRegister = showRegister;
+window.login = login;
+window.register = register;
+window.submitRequest = submitRequest;
+window.logout = logout;
