@@ -1,115 +1,204 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Citizen Request System</title>
+    <title>SCRS - Smart Citizen Request System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .hidden { display: none !important; }
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
     </style>
 </head>
-<body class="bg-gray-50">
-    <!-- Navigation -->
-    <nav class="bg-white shadow-lg">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="flex justify-between items-center py-4">
-                <div class="flex items-center gap-2">
-                    <i class="fas fa-city text-blue-600 text-2xl"></i>
-                    <span class="font-bold text-xl">Smart Citizen Request System</span>
-                </div>
-                <div id="nav-buttons">
-                    <button onclick="showLogin()" class="bg-blue-600 text-white px-4 py-2 rounded-lg">Login</button>
-                    <button onclick="showRegister()" class="border-2 border-blue-600 text-blue-600 px-4 py-2 rounded-lg">Register</button>
-                </div>
-                <div id="user-info" class="hidden items-center gap-4">
-                    <span id="user-name" class="font-medium"></span>
-                    <span id="user-role" class="text-xs bg-gray-200 px-2 py-1 rounded"></span>
-                    <button onclick="logout()" class="text-red-600">Logout</button>
-                </div>
-            </div>
-        </div>
-    </nav>
-
+<body class="bg-gray-100">
     <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-center mb-8">Smart Citizen Request System</h1>
+        
         <!-- Login Form -->
-        <div id="login-form" class="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8">
-            <h2 class="text-2xl font-bold mb-6 text-center">Login</h2>
-            <form onsubmit="login(event)">
-                <input type="email" id="login-email" placeholder="Email" class="w-full p-3 border rounded-lg mb-4" required>
-                <input type="password" id="login-password" placeholder="Password" class="w-full p-3 border rounded-lg mb-4" required>
-                <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-lg">Login</button>
-            </form>
-            <p class="text-center mt-4">No account? <a href="#" onclick="showRegister()" class="text-blue-600">Register</a></p>
+        <div id="loginPanel" class="max-w-md mx-auto bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-bold mb-4">Login</h2>
+            <input type="email" id="email" placeholder="Email" class="w-full p-2 border rounded mb-3">
+            <input type="password" id="password" placeholder="Password" class="w-full p-2 border rounded mb-3">
+            <button onclick="login()" class="w-full bg-blue-500 text-white p-2 rounded">Login</button>
+            <p class="text-center mt-3">No account? <a href="#" onclick="showRegister()" class="text-blue-500">Register</a></p>
         </div>
-
+        
         <!-- Register Form -->
-        <div id="register-form" class="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8 hidden">
-            <h2 class="text-2xl font-bold mb-6 text-center">Register</h2>
-            <form onsubmit="register(event)">
-                <input type="text" id="reg-name" placeholder="Full Name" class="w-full p-3 border rounded-lg mb-4" required>
-                <input type="email" id="reg-email" placeholder="Email" class="w-full p-3 border rounded-lg mb-4" required>
-                <input type="tel" id="reg-phone" placeholder="Phone" class="w-full p-3 border rounded-lg mb-4" required>
-                <input type="password" id="reg-password" placeholder="Password" class="w-full p-3 border rounded-lg mb-4" required>
-                <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-lg">Register</button>
-            </form>
-            <p class="text-center mt-4">Have an account? <a href="#" onclick="showLogin()" class="text-blue-600">Login</a></p>
+        <div id="registerPanel" class="max-w-md mx-auto bg-white rounded-lg shadow p-6 hidden">
+            <h2 class="text-xl font-bold mb-4">Register</h2>
+            <input type="text" id="regName" placeholder="Full Name" class="w-full p-2 border rounded mb-3">
+            <input type="email" id="regEmail" placeholder="Email" class="w-full p-2 border rounded mb-3">
+            <input type="text" id="regPhone" placeholder="Phone" class="w-full p-2 border rounded mb-3">
+            <input type="password" id="regPassword" placeholder="Password" class="w-full p-2 border rounded mb-3">
+            <button onclick="register()" class="w-full bg-green-500 text-white p-2 rounded">Register</button>
+            <p class="text-center mt-3"><a href="#" onclick="showLogin()" class="text-blue-500">Back to Login</a></p>
         </div>
-
-        <!-- Citizen Dashboard -->
-        <div id="citizen-dashboard" class="hidden">
-            <div class="grid md:grid-cols-3 gap-6">
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <h3 class="text-xl font-bold mb-4">Submit Request</h3>
-                    <form onsubmit="submitRequest(event)">
-                        <select id="req-category" class="w-full p-3 border rounded-lg mb-4" required>
-                            <option value="">Select Category</option>
-                        </select>
-                        <input type="text" id="req-title" placeholder="Title" class="w-full p-3 border rounded-lg mb-4" required>
-                        <textarea id="req-description" placeholder="Description" rows="3" class="w-full p-3 border rounded-lg mb-4" required></textarea>
-                        <input type="text" id="req-location" placeholder="Location" class="w-full p-3 border rounded-lg mb-4">
-                        <select id="req-priority" class="w-full p-3 border rounded-lg mb-4">
-                            <option value="low">Low</option>
-                            <option value="medium" selected>Medium</option>
-                            <option value="high">High</option>
-                            <option value="urgent">Urgent</option>
-                        </select>
-                        <input type="file" id="req-photos" accept="image/*" multiple class="w-full p-3 border rounded-lg mb-4">
-                        <div id="image-preview" class="flex gap-2 mb-4"></div>
-                        <button type="submit" class="w-full bg-green-600 text-white p-3 rounded-lg">Submit</button>
-                    </form>
-                </div>
-                <div class="md:col-span-2 bg-white rounded-xl shadow-lg p-6">
-                    <h3 class="text-xl font-bold mb-4">My Requests</h3>
-                    <div id="requests-list" class="space-y-4 max-h-96 overflow-y-auto"></div>
-                </div>
+        
+        <!-- Dashboard -->
+        <div id="dashboard" class="hidden">
+            <div class="bg-white rounded-lg shadow p-6 mb-4">
+                <h2 id="welcomeMsg" class="text-xl font-bold"></h2>
+                <button onclick="logout()" class="bg-red-500 text-white px-4 py-2 rounded mt-2">Logout</button>
             </div>
-        </div>
-
-        <!-- Admin Dashboard -->
-        <div id="admin-dashboard" class="hidden">
-            <div class="grid md:grid-cols-4 gap-6 mb-8">
-                <div class="bg-blue-600 text-white rounded-xl p-6"><h4>Total</h4><p id="total-requests" class="text-3xl font-bold">0</p></div>
-                <div class="bg-yellow-600 text-white rounded-xl p-6"><h4>Open</h4><p id="open-requests" class="text-3xl font-bold">0</p></div>
-                <div class="bg-purple-600 text-white rounded-xl p-6"><h4>In Progress</h4><p id="progress-requests" class="text-3xl font-bold">0</p></div>
-                <div class="bg-green-600 text-white rounded-xl p-6"><h4>Resolved</h4><p id="resolved-requests" class="text-3xl font-bold">0</p></div>
+            
+            <!-- Request Form -->
+            <div class="bg-white rounded-lg shadow p-6 mb-4">
+                <h3 class="text-lg font-bold mb-3">Submit Request</h3>
+                <select id="category" class="w-full p-2 border rounded mb-3">
+                    <option value="">Select Category</option>
+                </select>
+                <input type="text" id="title" placeholder="Title" class="w-full p-2 border rounded mb-3">
+                <textarea id="description" placeholder="Description" rows="3" class="w-full p-2 border rounded mb-3"></textarea>
+                <input type="text" id="location" placeholder="Location" class="w-full p-2 border rounded mb-3">
+                <select id="priority" class="w-full p-2 border rounded mb-3">
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                </select>
+                <button onclick="submitRequest()" class="w-full bg-green-500 text-white p-2 rounded">Submit</button>
             </div>
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <h3 class="text-xl font-bold mb-4">All Requests</h3>
-                <div id="admin-requests-list" class="overflow-x-auto"></div>
+            
+            <!-- Requests List -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h3 class="text-lg font-bold mb-3">My Requests</h3>
+                <div id="requestsList" class="space-y-2"></div>
             </div>
         </div>
     </div>
 
     <script>
-        // Production API URL
         const API_URL = 'https://scrs-backend.onrender.com/api';
-        console.log('API URL:', API_URL);
-        console.log('Frontend version: 2.0 - Login Dashboard');
+        let token = localStorage.getItem('token');
+        
+        console.log('App loaded, API:', API_URL);
+        
+        if (token) {
+            loadDashboard();
+        } else {
+            showLogin();
+        }
+        
+        function showLogin() {
+            document.getElementById('loginPanel').classList.remove('hidden');
+            document.getElementById('registerPanel').classList.add('hidden');
+            document.getElementById('dashboard').classList.add('hidden');
+        }
+        
+        function showRegister() {
+            document.getElementById('loginPanel').classList.add('hidden');
+            document.getElementById('registerPanel').classList.remove('hidden');
+            document.getElementById('dashboard').classList.add('hidden');
+        }
+        
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            try {
+                const res = await axios.post(`${API_URL}/auth/login`, { email, password });
+                if (res.data.success) {
+                    localStorage.setItem('token', res.data.token);
+                    localStorage.setItem('user', JSON.stringify(res.data.user));
+                    token = res.data.token;
+                    await loadDashboard();
+                }
+            } catch(err) {
+                alert('Login failed: ' + (err.response?.data?.message || err.message));
+            }
+        }
+        
+        async function register() {
+            const data = {
+                full_name: document.getElementById('regName').value,
+                email: document.getElementById('regEmail').value,
+                phone: document.getElementById('regPhone').value,
+                password: document.getElementById('regPassword').value,
+                national_id: 'TEMP' + Date.now()
+            };
+            try {
+                const res = await axios.post(`${API_URL}/auth/register`, data);
+                if (res.data.success) {
+                    alert('Registration successful! OTP: ' + res.data.otp);
+                    showLogin();
+                }
+            } catch(err) {
+                alert('Registration failed: ' + (err.response?.data?.message || err.message));
+            }
+        }
+        
+        async function loadDashboard() {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            document.getElementById('welcomeMsg').innerHTML = `Welcome, ${user.full_name || 'User'}! Role: ${user.role || 'citizen'}`;
+            document.getElementById('loginPanel').classList.add('hidden');
+            document.getElementById('registerPanel').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            
+            await loadCategories();
+            await loadMyRequests();
+        }
+        
+        async function loadCategories() {
+            try {
+                const res = await axios.get(`${API_URL}/categories`);
+                const select = document.getElementById('category');
+                select.innerHTML = '<option value="">Select Category</option>' + 
+                    res.data.categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+            } catch(err) {
+                console.error('Categories error:', err);
+            }
+        }
+        
+        async function submitRequest() {
+            const token = localStorage.getItem('token');
+            const data = {
+                category_id: document.getElementById('category').value,
+                title: document.getElementById('title').value,
+                description: document.getElementById('description').value,
+                location_address: document.getElementById('location').value,
+                priority: document.getElementById('priority').value
+            };
+            try {
+                const res = await axios.post(`${API_URL}/requests`, data, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                if (res.data.success) {
+                    alert('Request submitted! Ref: ' + res.data.reference_number);
+                    document.getElementById('title').value = '';
+                    document.getElementById('description').value = '';
+                    document.getElementById('location').value = '';
+                    await loadMyRequests();
+                }
+            } catch(err) {
+                alert('Submit failed: ' + (err.response?.data?.message || err.message));
+            }
+        }
+        
+        async function loadMyRequests() {
+            const token = localStorage.getItem('token');
+            try {
+                const res = await axios.get(`${API_URL}/requests/my-requests`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                const container = document.getElementById('requestsList');
+                const requests = res.data.requests || [];
+                if (requests.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500">No requests yet</p>';
+                } else {
+                    container.innerHTML = requests.map(r => `
+                        <div class="border p-3 rounded">
+                            <b>${r.title || 'Request'}</b><br>
+                            <small>Status: ${r.status} | Priority: ${r.priority}</small><br>
+                            <small class="text-gray-500">Ref: ${r.reference_number}</small>
+                        </div>
+                    `).join('');
+                }
+            } catch(err) {
+                console.error('Load requests error:', err);
+            }
+        }
+        
+        function logout() {
+            localStorage.clear();
+            token = null;
+            showLogin();
+        }
     </script>
-    <script src="js/app.js"></script>
 </body>
 </html>
