@@ -1,75 +1,49 @@
-// Smart Citizen Request System - Production Frontend
-console.log('🚀 SCRS Frontend Starting...');
-
-// Configuration
-const API_URL = window.location.hostname === 'localhost' 
-    ? 'http://localhost:3000/api'
-    : 'https://scrs-backend.onrender.com/api';
-
-console.log('📍 Environment:', window.location.hostname);
-console.log('🌐 API URL:', API_URL);
-
+// Smart Citizen Request System - Main Application
+const API_URL = window.API_URL || 'https://scrs-backend.onrender.com/api';
 let authToken = localStorage.getItem('token');
 let currentUser = null;
 
-// Initialize on page load
+console.log('🚀 SCRS Frontend Starting...');
+console.log('🌐 API URL:', API_URL);
+
+// Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('📄 DOM Loaded');
     loadCategories();
-    
     if (authToken) {
-        console.log('🔐 Token found, loading user data...');
         loadUserData();
     } else {
-        console.log('👤 No token, showing login form');
         showLogin();
     }
 });
 
-// Test backend connection on load
-async function testBackendConnection() {
+// Test backend connection
+async function testConnection() {
     try {
-        const response = await axios.get(`${API_URL.replace('/api', '')}/health`);
+        const response = await axios.get(API_URL.replace('/api', '') + '/health');
         console.log('✅ Backend connected:', response.data);
         return true;
     } catch (error) {
         console.error('❌ Backend connection failed:', error.message);
-        console.log('⚠️ Make sure backend is deployed at:', API_URL);
         return false;
     }
 }
-
-// Call this to check connection
-setTimeout(testBackendConnection, 1000);
+testConnection();
 
 // Load categories
 async function loadCategories() {
     try {
-        console.log('📋 Loading categories from:', `${API_URL}/categories`);
         const response = await axios.get(`${API_URL}/categories`);
-        const categories = response.data.categories;
         const select = document.getElementById('req-category');
         if (select) {
             select.innerHTML = '<option value="">Select Category</option>' +
-                categories.map(cat => `<option value="${cat.id}">${cat.name}</option>`).join('');
-            console.log('✅ Categories loaded:', categories.length);
+                response.data.categories.map(cat => `<option value="${cat.id}">${cat.name}</option>`).join('');
         }
     } catch (error) {
-        console.error('❌ Error loading categories:', error);
-        // Show fallback categories
-        const select = document.getElementById('req-category');
-        if (select) {
-            select.innerHTML = `
-                <option value="">Select Category</option>
-                <option value="1">Roads - Pothole</option>
-                <option value="2">Water - Leakage</option>
-                <option value="3">Electricity - Outage</option>
-            `;
-        }
+        console.error('Error loading categories:', error);
     }
 }
 
-// Show login form
+// UI Functions
 function showLogin() {
     document.getElementById('login-form').classList.remove('hidden');
     document.getElementById('register-form').classList.add('hidden');
@@ -86,25 +60,20 @@ function showRegister() {
     document.getElementById('admin-dashboard').classList.add('hidden');
 }
 
-// Register user
+// Register
 async function register(event) {
     event.preventDefault();
-    const name = document.getElementById('reg-name').value;
-    const email = document.getElementById('reg-email').value;
-    const phone = document.getElementById('reg-phone').value;
-    const password = document.getElementById('reg-password').value;
-
+    const data = {
+        full_name: document.getElementById('reg-name').value,
+        email: document.getElementById('reg-email').value,
+        phone: document.getElementById('reg-phone').value,
+        password: document.getElementById('reg-password').value,
+        national_id: 'TEMP' + Date.now()
+    };
     try {
-        const response = await axios.post(`${API_URL}/auth/register`, {
-            full_name: name,
-            email: email,
-            phone: phone,
-            password: password,
-            national_id: 'TEMP' + Date.now()
-        });
-
+        const response = await axios.post(`${API_URL}/auth/register`, data);
         if (response.data.success) {
-            alert(`Registration successful! Your OTP is: ${response.data.otp}`);
+            alert(`Registration successful! OTP: ${response.data.otp}`);
             showLogin();
         }
     } catch (error) {
@@ -112,12 +81,11 @@ async function register(event) {
     }
 }
 
-// Login user
+// Login
 async function login(event) {
     event.preventDefault();
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
-
     try {
         const response = await axios.post(`${API_URL}/auth/login`, { email, password });
         if (response.data.success) {
@@ -132,7 +100,7 @@ async function login(event) {
     }
 }
 
-// Load user data after login
+// Load user data
 async function loadUserData() {
     document.getElementById('nav-buttons').classList.add('hidden');
     document.getElementById('user-info').classList.remove('hidden');
@@ -153,41 +121,27 @@ async function loadUserData() {
     }
 }
 
-// Submit a new request
+// Submit request
 async function submitRequest(event) {
     event.preventDefault();
-    const category_id = document.getElementById('req-category').value;
-    const title = document.getElementById('req-title').value;
-    const description = document.getElementById('req-description').value;
-    const location_address = document.getElementById('req-location').value;
-    const priority = document.getElementById('req-priority').value;
-
-    if (!category_id || !title || !description) {
-        alert('Please fill all required fields');
-        return;
-    }
-
     const formData = new FormData();
-    formData.append('category_id', category_id);
-    formData.append('title', title);
-    formData.append('description', description);
-    formData.append('location_address', location_address);
-    formData.append('priority', priority);
-
+    formData.append('category_id', document.getElementById('req-category').value);
+    formData.append('title', document.getElementById('req-title').value);
+    formData.append('description', document.getElementById('req-description').value);
+    formData.append('location_address', document.getElementById('req-location').value);
+    formData.append('priority', document.getElementById('req-priority').value);
+    
     const photos = document.getElementById('req-photos').files;
     for (let i = 0; i < photos.length; i++) {
         formData.append('attachments', photos[i]);
     }
-
+    
     try {
         const response = await axios.post(`${API_URL}/requests`, formData, {
-            headers: { 
-                Authorization: `Bearer ${authToken}`,
-                'Content-Type': 'multipart/form-data'
-            }
+            headers: { Authorization: `Bearer ${authToken}`, 'Content-Type': 'multipart/form-data' }
         });
         if (response.data.success) {
-            alert(`✅ Request submitted!\nReference: ${response.data.reference_number}`);
+            alert(`✅ Request submitted! Reference: ${response.data.reference_number}`);
             document.getElementById('req-title').value = '';
             document.getElementById('req-description').value = '';
             document.getElementById('req-location').value = '';
@@ -196,11 +150,11 @@ async function submitRequest(event) {
             loadMyRequests();
         }
     } catch (error) {
-        alert('Failed to submit: ' + (error.response?.data?.message || error.message));
+        alert('Failed: ' + (error.response?.data?.message || error.message));
     }
 }
 
-// Load citizen's requests
+// Load my requests
 async function loadMyRequests() {
     try {
         const response = await axios.get(`${API_URL}/requests/my-requests`, {
@@ -208,34 +162,29 @@ async function loadMyRequests() {
         });
         const requests = response.data.requests;
         const container = document.getElementById('requests-list');
-        
         if (!requests || requests.length === 0) {
-            container.innerHTML = '<div class="text-center text-gray-500 py-8">No requests yet</div>';
+            container.innerHTML = '<p class="text-gray-500 text-center">No requests yet</p>';
             return;
         }
-
         container.innerHTML = requests.map(req => `
-            <div class="border rounded-lg p-4 mb-4">
-                <div class="flex justify-between items-start">
+            <div class="border rounded-lg p-4">
+                <div class="flex justify-between">
                     <div>
-                        <h4 class="font-bold">${req.title || req.category_name?.name || 'Request'}</h4>
+                        <h4 class="font-bold">${req.title}</h4>
                         <p class="text-sm text-gray-600">${req.description?.substring(0, 100)}</p>
-                        <div class="flex gap-2 mt-2">
-                            <span class="text-xs px-2 py-1 rounded bg-gray-200">${req.status}</span>
-                            <span class="text-xs px-2 py-1 rounded bg-gray-200">${req.priority}</span>
-                        </div>
+                        <span class="text-xs bg-gray-200 px-2 py-1 rounded mt-2 inline-block">${req.status}</span>
+                        <span class="text-xs bg-gray-200 px-2 py-1 rounded ml-2">${req.priority}</span>
                         <p class="text-xs text-gray-500 mt-1">Ref: ${req.reference_number}</p>
                     </div>
                 </div>
             </div>
         `).join('');
     } catch (error) {
-        console.error('Error loading requests:', error);
-        document.getElementById('requests-list').innerHTML = '<p class="text-red-500">Error loading requests</p>';
+        console.error('Error:', error);
     }
 }
 
-// Load admin stats
+// Admin functions
 async function loadAdminStats() {
     try {
         const response = await axios.get(`${API_URL}/admin/stats`, {
@@ -251,7 +200,6 @@ async function loadAdminStats() {
     }
 }
 
-// Load all requests for admin
 async function loadAllRequests() {
     try {
         const response = await axios.get(`${API_URL}/admin/requests`, {
@@ -259,46 +207,45 @@ async function loadAllRequests() {
         });
         const requests = response.data.requests;
         const container = document.getElementById('admin-requests-list');
-        
         if (!requests || requests.length === 0) {
-            container.innerHTML = '<p class="text-center">No requests found</p>';
+            container.innerHTML = '<p class="text-center">No requests</p>';
             return;
         }
-
         container.innerHTML = `
             <table class="min-w-full">
-                <thead><tr><th>Ref</th><th>Citizen</th><th>Title</th><th>Status</th><th>Date</th></tr></thead>
+                <thead class="bg-gray-50">
+                    <tr><th class="px-4 py-2">Ref</th><th>Citizen</th><th>Title</th><th>Status</th><th>Priority</th><th>Date</th></tr>
+                </thead>
                 <tbody>
                     ${requests.map(req => `
-                        <tr>
-                            <td class="border px-4 py-2">${req.reference_number}</td>
-                            <td class="border px-4 py-2">${req.citizen_name}</td>
-                            <td class="border px-4 py-2">${req.title || '-'}</td>
-                            <td class="border px-4 py-2">
+                        <tr class="border-t">
+                            <td class="px-4 py-2">${req.reference_number}</td>
+                            <td class="px-4 py-2">${req.citizen_name}</td>
+                            <td class="px-4 py-2">${req.title || '-'}</td>
+                            <td class="px-4 py-2">
                                 <select onchange="updateStatus(${req.id}, this.value)" class="border rounded px-2 py-1">
                                     <option value="open" ${req.status === 'open' ? 'selected' : ''}>Open</option>
                                     <option value="in_progress" ${req.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
                                     <option value="resolved" ${req.status === 'resolved' ? 'selected' : ''}>Resolved</option>
                                 </select>
                             </td>
-                            <td class="border px-4 py-2">${new Date(req.created_at).toLocaleDateString()}</td>
+                            <td class="px-4 py-2">${req.priority}</td>
+                            <td class="px-4 py-2">${new Date(req.created_at).toLocaleDateString()}</td>
                         </tr>
                     `).join('')}
                 </tbody>
             </table>
         `;
     } catch (error) {
-        console.error('Error loading all requests:', error);
+        console.error('Error:', error);
     }
 }
 
-// Update request status
 window.updateStatus = async function(requestId, newStatus) {
     try {
-        await axios.put(`${API_URL}/admin/requests/${requestId}/status`, 
-            { status: newStatus },
-            { headers: { Authorization: `Bearer ${authToken}` } }
-        );
+        await axios.put(`${API_URL}/admin/requests/${requestId}/status`, { status: newStatus }, {
+            headers: { Authorization: `Bearer ${authToken}` }
+        });
         alert('Status updated!');
         loadAllRequests();
         loadAdminStats();
@@ -307,7 +254,6 @@ window.updateStatus = async function(requestId, newStatus) {
     }
 };
 
-// Logout
 function logout() {
     localStorage.clear();
     authToken = null;
@@ -324,4 +270,21 @@ window.submitRequest = submitRequest;
 window.logout = logout;
 window.updateStatus = updateStatus;
 
-console.log('✅ Frontend initialized with API URL:', API_URL);
+// Image preview
+document.getElementById('req-photos')?.addEventListener('change', function(e) {
+    const preview = document.getElementById('image-preview');
+    preview.innerHTML = '';
+    const files = Array.from(e.target.files);
+    files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.className = 'w-20 h-20 object-cover rounded border';
+            preview.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+    });
+});
+
+console.log('✅ Frontend ready!');
