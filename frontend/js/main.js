@@ -1,5 +1,5 @@
 <<<<<<< HEAD
-const API_URL = 'http://localhost:3000/requests';
+const API_URL = window.API_URL;
 =======
 const form = document.getElementById('requestForm');
 const responseDiv = document.getElementById('response');
