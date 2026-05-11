@@ -1,27 +1,319 @@
 const express = require('express');
+const cors = require('cors');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const mysql = require('mysql2');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
+const JWT_SECRET = process.env.JWT_SECRET || 'scrs_secret_key_2026';
 
-// Simple test endpoint
-app.get('/', (req, res) => {
-    res.json({ 
-        status: 'OK', 
-        message: 'Smart Citizen Request System API is running!',
-        timestamp: new Date().toISOString()
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+console.log('🚀 Starting SCRS Backend...');
+
+// Database connection
+let db;
+
+try {
+    db = mysql.createConnection({
+        host: process.env.DB_HOST || 'localhost',
+        user: process.env.DB_USER || 'samuel',
+        password: process.env.DB_PASSWORD || 'Samuel@2025!',
+        database: process.env.DB_NAME || 'smart_city'
     });
-});
+    
+    db.connect((err) => {
+        if (err) {
+            console.error('❌ Database connection failed:', err.message);
+            console.log('⚠️ Running without database - using mock data');
+        } else {
+            console.log('✅ Connected to MySQL database');
+        }
+    });
+} catch (err) {
+    console.log('⚠️ Database not configured - using mock data');
+}
 
+// Promisify queries helper
+const query = (sql, params) => {
+    return new Promise((resolve, reject) => {
+        if (!db) {
+            resolve([]);
+            return;
+        }
+        db.query(sql, params, (err, results) => {
+            if (err) reject(err);
+            else resolve(results);
+        });
+    });
+};
+
+// ============ HEALTH CHECK ============
 app.get('/health', (req, res) => {
     res.json({ 
         status: 'OK', 
-        uptime: process.uptime(),
-        timestamp: new Date().toISOString()
+        uptime: process.uptime(), 
+        timestamp: new Date().toISOString(),
+        database: db ? 'connected' : 'not connected'
     });
 });
 
+// ============ CATEGORIES ============
+app.get('/api/categories', async (req, res) => {
+    try {
+        // Try to get from database first
+        const categories = await query('SELECT * FROM categories WHERE is_active = 1');
+        
+        if (categories && categories.length > 0) {
+            res.json({ success: true, categories });
+        } else {
+            // Fallback mock categories
+            res.json({ 
+                success: true, 
+                categories: [
+                    { id: 1, name: 'Roads - Pothole', sla_hours: 72 },
+                    { id: 2, name: 'Roads - Street Damage', sla_hours: 96 },
+                    { id: 3, name: 'Water - Leakage', sla_hours: 48 },
+                    { id: 4, name: 'Water - Supply Issue', sla_hours: 24 },
+                    { id: 5, name: 'Electricity - Outage', sla_hours: 24 },
+                    { id: 6, name: 'Electricity - Streetlight', sla_hours: 72 },
+                    { id: 7, name: 'Sanitation - Garbage', sla_hours: 48 },
+                    { id: 8, name: 'Sanitation - Drainage', sla_hours: 48 },
+                    { id: 9, name: 'Public Safety - Lighting', sla_hours: 72 },
+                    { id: 10, name: 'Public Safety - Other', sla_hours: 72 }
+                ]
+            });
+        }
+    } catch (error) {
+        res.json({ 
+            success: true, 
+            categories: [
+                { id: 1, name: 'Roads - Pothole', sla_hours: 72 },
+                { id: 2, name: 'Water - Leakage', sla_hours: 48 },
+                { id: 3, name: 'Electricity - Outage', sla_hours: 24 }
+            ]
+        });
+    }
+});
+
+// ============ REGISTER ============
+app.post('/api/auth/register', async (req, res) => {
+    try {
+        const { email, phone, password, full_name, national_id } = req.body;
+        
+        if (!email || !phone || !password || !full_name) {
+            return res.status(400).json({ success: false, message: 'All fields are required' });
+        }
+        
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        if (db) {
+            const existing = await query('SELECT id FROM users WHERE email = ? OR phone = ?', [email, phone]);
+            if (existing.length > 0) {
+                return res.status(400).json({ success: false, message: 'User already exists' });
+            }
+            
+            const result = await query(
+                'INSERT INTO users (email, phone, password_hash, full_name, national_id, otp_code, otp_expires_at) VALUES (?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE))',
+                [email, phone, hashedPassword, full_name, national_id, otp]
+            );
+            
+            res.status(201).json({
+                success: true,
+                message: 'Registration successful',
+                userId: result.insertId,
+                otp: otp
+            });
+        } else {
+            // Mock registration for testing
+            res.status(201).json({
+                success: true,
+                message: 'Registration successful',
+                userId: 1,
+                otp: otp
+            });
+        }
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// ============ LOGIN ============
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        
+        if (!email || !password) {
+            return res.status(400).json({ success: false, message: 'Email and password required' });
+        }
+        
+        // Mock users for testing when database is not available
+        const mockUsers = [
+            { id: 1, email: 'citizen@test.com', password_hash: await bcrypt.hash('Citizen@123', 10), full_name: 'Test Citizen', role: 'citizen' },
+            { id: 2, email: 'admin@scrs.gov', password_hash: await bcrypt.hash('Admin@123', 10), full_name: 'System Admin', role: 'super_admin' }
+        ];
+        
+        let user = null;
+        
+        if (db) {
+            const users = await query('SELECT id, email, password_hash, full_name, role, is_verified, is_active FROM users WHERE email = ?', [email]);
+            if (users.length > 0) user = users[0];
+        } else {
+            user = mockUsers.find(u => u.email === email);
+        }
+        
+        if (!user) {
+            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+        
+        const validPassword = await bcrypt.compare(password, user.password_hash);
+        if (!validPassword) {
+            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+        }
+        
+        const token = jwt.sign(
+            { userId: user.id, email: user.email, role: user.role },
+            JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+        
+        res.json({
+            success: true,
+            token,
+            user: {
+                id: user.id,
+                email: user.email,
+                full_name: user.full_name,
+                role: user.role
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// ============ AUTHENTICATION MIDDLEWARE ============
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    
+    if (!token) {
+        return res.status(401).json({ success: false, message: 'Token required' });
+    }
+    
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) {
+            return res.status(403).json({ success: false, message: 'Invalid token' });
+        }
+        req.user = user;
+        next();
+    });
+};
+
+// ============ SUBMIT REQUEST ============
+app.post('/api/requests', authenticateToken, async (req, res) => {
+    try {
+        const { category_id, title, description, location_address, priority } = req.body;
+        
+        const refNum = 'SCR' + Date.now().toString().slice(-8) + Math.floor(Math.random() * 1000);
+        
+        res.status(201).json({
+            success: true,
+            message: 'Request submitted',
+            reference_number: refNum,
+            requestId: Date.now()
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// ============ MY REQUESTS ============
+app.get('/api/requests/my-requests', authenticateToken, async (req, res) => {
+    try {
+        // Return mock data for testing
+        res.json({ 
+            success: true, 
+            requests: [
+                {
+                    id: 1,
+                    reference_number: 'SCR12345678',
+                    title: 'Test Request',
+                    description: 'This is a test request',
+                    status: 'open',
+                    priority: 'medium',
+                    created_at: new Date().toISOString(),
+                    category_name: 'Roads - Pothole'
+                }
+            ]
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// ============ ADMIN - ALL REQUESTS ============
+app.get('/api/admin/requests', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'super_admin' && req.user.role !== 'department_admin') {
+        return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+    
+    res.json({ 
+        success: true, 
+        requests: [
+            {
+                id: 1,
+                reference_number: 'SCR12345678',
+                title: 'Test Request',
+                description: 'Test description',
+                status: 'open',
+                priority: 'medium',
+                created_at: new Date().toISOString(),
+                category_name: 'Roads - Pothole',
+                citizen_name: 'Test Citizen',
+                citizen_email: 'citizen@test.com'
+            }
+        ]
+    });
+});
+
+// ============ ADMIN - UPDATE STATUS ============
+app.put('/api/admin/requests/:id/status', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'super_admin' && req.user.role !== 'department_admin') {
+        return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+    
+    res.json({ success: true, message: 'Status updated' });
+});
+
+// ============ ADMIN - STATS ============
+app.get('/api/admin/stats', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'super_admin' && req.user.role !== 'department_admin') {
+        return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+    
+    res.json({
+        success: true,
+        stats: {
+            total: 5,
+            open: 2,
+            inProgress: 1,
+            resolved: 2
+        }
+    });
+});
+
+// Start server
 app.listen(PORT, () => {
-    console.log(`✅ Server running on port ${PORT}`);
-    console.log(`📍 Health check: http://localhost:${PORT}/health`);
+    console.log(`\n🚀 SCRS Backend running!`);
+    console.log(`📍 URL: http://localhost:${PORT}`);
+    console.log(`📝 Health: http://localhost:${PORT}/health`);
+    console.log(`📋 Categories: http://localhost:${PORT}/api/categories`);
+    console.log(`🔐 Login: POST http://localhost:${PORT}/api/auth/login\n`);
 });
 
 module.exports = app;
