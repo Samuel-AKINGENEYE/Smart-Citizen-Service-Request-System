@@ -8,27 +8,39 @@
     <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
         .hidden { display: none !important; }
-        body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+        .card-hover:hover { transform: translateY(-5px); transition: all 0.3s ease; }
     </style>
 </head>
 <body class="bg-gray-50">
     <!-- Navigation -->
-    <nav class="bg-white shadow-lg">
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4">
             <div class="flex justify-between items-center py-4">
-                <div class="flex items-center gap-2">
+                <div class="flex items-center space-x-2">
                     <i class="fas fa-city text-blue-600 text-2xl"></i>
-                    <span class="font-bold text-xl">Smart Citizen Request System</span>
+                    <span class="font-bold text-xl text-gray-800">Smart Citizen</span>
+                    <span class="text-sm bg-blue-100 text-blue-600 px-2 py-1 rounded">Request System</span>
                 </div>
-                <div id="nav-buttons">
-                    <button onclick="showLogin()" class="bg-blue-600 text-white px-4 py-2 rounded-lg">Login</button>
-                    <button onclick="showRegister()" class="border-2 border-blue-600 text-blue-600 px-4 py-2 rounded-lg">Register</button>
+                <div id="nav-buttons" class="flex space-x-4">
+                    <button onclick="showLogin()" class="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Login
+                    </button>
+                    <button onclick="showRegister()" class="border-2 border-blue-600 text-blue-600 px-5 py-2 rounded-lg hover:bg-blue-50 transition">
+                        <i class="fas fa-user-plus mr-2"></i>Register
+                    </button>
                 </div>
-                <div id="user-info" class="hidden items-center gap-4">
-                    <span id="user-name" class="font-medium"></span>
-                    <span id="user-role" class="text-xs bg-gray-200 px-2 py-1 rounded"></span>
-                    <button onclick="logout()" class="text-red-600">Logout</button>
+                <div id="user-info" class="hidden items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-user-circle text-gray-600 text-2xl"></i>
+                        <span id="user-name" class="font-medium text-gray-700"></span>
+                        <span id="user-role" class="text-xs bg-gray-200 px-2 py-1 rounded-full"></span>
+                    </div>
+                    <button onclick="logout()" class="text-red-600 hover:text-red-800">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
                 </div>
             </div>
         </div>
@@ -37,79 +49,514 @@
     <div class="container mx-auto px-4 py-8">
         <!-- Login Form -->
         <div id="login-form" class="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8">
-            <h2 class="text-2xl font-bold mb-6 text-center">Login</h2>
+            <h2 class="text-2xl font-bold mb-6 text-center">Welcome Back</h2>
             <form onsubmit="login(event)">
-                <input type="email" id="login-email" placeholder="Email" class="w-full p-3 border rounded-lg mb-4" required>
-                <input type="password" id="login-password" placeholder="Password" class="w-full p-3 border rounded-lg mb-4" required>
-                <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-lg">Login</button>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Email Address</label>
+                    <input type="email" id="login-email" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Password</label>
+                    <input type="password" id="login-password" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+                    Sign In
+                </button>
             </form>
-            <p class="text-center mt-4">No account? <a href="#" onclick="showRegister()" class="text-blue-600">Register</a></p>
+            <p class="text-center mt-4 text-gray-600">
+                Don't have an account? <a href="#" onclick="showRegister()" class="text-blue-600">Create one</a>
+            </p>
+            <p class="text-center mt-2 text-xs text-gray-400">Demo: citizen@test.com / Citizen@123</p>
         </div>
 
         <!-- Register Form -->
         <div id="register-form" class="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8 hidden">
-            <h2 class="text-2xl font-bold mb-6 text-center">Register</h2>
+            <h2 class="text-2xl font-bold mb-6 text-center">Create Account</h2>
             <form onsubmit="register(event)">
-                <input type="text" id="reg-name" placeholder="Full Name" class="w-full p-3 border rounded-lg mb-4" required>
-                <input type="email" id="reg-email" placeholder="Email" class="w-full p-3 border rounded-lg mb-4" required>
-                <input type="tel" id="reg-phone" placeholder="Phone" class="w-full p-3 border rounded-lg mb-4" required>
-                <input type="password" id="reg-password" placeholder="Password" class="w-full p-3 border rounded-lg mb-4" required>
-                <button type="submit" class="w-full bg-blue-600 text-white p-3 rounded-lg">Register</button>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Full Name</label>
+                    <input type="text" id="reg-name" required class="w-full px-4 py-2 border rounded-lg">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Email Address</label>
+                    <input type="email" id="reg-email" required class="w-full px-4 py-2 border rounded-lg">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Phone Number</label>
+                    <input type="tel" id="reg-phone" required class="w-full px-4 py-2 border rounded-lg">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 mb-2">Password</label>
+                    <input type="password" id="reg-password" required class="w-full px-4 py-2 border rounded-lg">
+                </div>
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+                    Register
+                </button>
             </form>
-            <p class="text-center mt-4">Have an account? <a href="#" onclick="showLogin()" class="text-blue-600">Login</a></p>
+            <p class="text-center mt-4">
+                Already have an account? <a href="#" onclick="showLogin()" class="text-blue-600">Sign In</a>
+            </p>
         </div>
 
         <!-- Citizen Dashboard -->
         <div id="citizen-dashboard" class="hidden">
-            <div class="grid md:grid-cols-3 gap-6">
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <h3 class="text-xl font-bold mb-4">Submit Request</h3>
-                    <form onsubmit="submitRequest(event)">
-                        <select id="req-category" class="w-full p-3 border rounded-lg mb-4" required>
-                            <option value="">Select Category</option>
-                        </select>
-                        <input type="text" id="req-title" placeholder="Title" class="w-full p-3 border rounded-lg mb-4" required>
-                        <textarea id="req-description" placeholder="Description" rows="3" class="w-full p-3 border rounded-lg mb-4" required></textarea>
-                        <input type="text" id="req-location" placeholder="Location" class="w-full p-3 border rounded-lg mb-4">
-                        <select id="req-priority" class="w-full p-3 border rounded-lg mb-4">
-                            <option value="low">Low</option>
-                            <option value="medium" selected>Medium</option>
-                            <option value="high">High</option>
-                            <option value="urgent">Urgent</option>
-                        </select>
-                        <input type="file" id="req-photos" accept="image/*" multiple class="w-full p-3 border rounded-lg mb-4">
-                        <div id="image-preview" class="flex gap-2 mb-4"></div>
-                        <button type="submit" class="w-full bg-green-600 text-white p-3 rounded-lg">Submit</button>
-                    </form>
+            <div class="grid lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
+                        <h3 class="text-xl font-bold mb-4 flex items-center">
+                            <i class="fas fa-pen-alt text-blue-600 mr-2"></i>Submit New Request
+                        </h3>
+                        <form onsubmit="submitRequest(event)">
+                            <div class="mb-4">
+                                <label class="block text-gray-700 mb-2">Category</label>
+                                <select id="req-category" required class="w-full px-4 py-2 border rounded-lg">
+                                    <option value="">Select Category</option>
+                                </select>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-gray-700 mb-2">Title</label>
+                                <input type="text" id="req-title" required class="w-full px-4 py-2 border rounded-lg">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-gray-700 mb-2">Description</label>
+                                <textarea id="req-description" rows="3" required class="w-full px-4 py-2 border rounded-lg"></textarea>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-gray-700 mb-2">Location</label>
+                                <input type="text" id="req-location" placeholder="Address" class="w-full px-4 py-2 border rounded-lg">
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-gray-700 mb-2">Priority</label>
+                                <select id="req-priority" class="w-full px-4 py-2 border rounded-lg">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                    <option value="urgent">Urgent</option>
+                                </select>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-gray-700 mb-2">Photos (up to 5)</label>
+                                <input type="file" id="req-photos" accept="image/*" multiple class="w-full px-4 py-2 border rounded-lg">
+                                <div id="image-preview" class="mt-2 flex flex-wrap gap-2"></div>
+                                <p class="text-xs text-gray-500 mt-1">Upload images related to your issue</p>
+                            </div>
+                            <button type="submit" class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition">
+                                <i class="fas fa-paper-plane mr-2"></i>Submit Request
+                            </button>
+                        </form>
+                    </div>
                 </div>
-                <div class="md:col-span-2 bg-white rounded-xl shadow-lg p-6">
-                    <h3 class="text-xl font-bold mb-4">My Requests</h3>
-                    <div id="requests-list" class="space-y-4 max-h-96 overflow-y-auto"></div>
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h3 class="text-xl font-bold mb-4 flex items-center">
+                            <i class="fas fa-list-alt text-blue-600 mr-2"></i>My Requests
+                        </h3>
+                        <div id="requests-list" class="space-y-4 max-h-96 overflow-y-auto">
+                            <p class="text-gray-500 text-center py-8">Loading your requests...</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Admin Dashboard -->
         <div id="admin-dashboard" class="hidden">
-            <div class="grid md:grid-cols-4 gap-6 mb-8">
-                <div class="bg-blue-600 text-white rounded-xl p-6"><h4>Total</h4><p id="total-requests" class="text-3xl font-bold">0</p></div>
-                <div class="bg-yellow-600 text-white rounded-xl p-6"><h4>Open</h4><p id="open-requests" class="text-3xl font-bold">0</p></div>
-                <div class="bg-purple-600 text-white rounded-xl p-6"><h4>In Progress</h4><p id="progress-requests" class="text-3xl font-bold">0</p></div>
-                <div class="bg-green-600 text-white rounded-xl p-6"><h4>Resolved</h4><p id="resolved-requests" class="text-3xl font-bold">0</p></div>
+            <div class="grid lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white card-hover">
+                    <i class="fas fa-tasks text-3xl mb-2"></i>
+                    <h4 class="text-sm opacity-90">Total Requests</h4>
+                    <p id="total-requests" class="text-3xl font-bold">0</p>
+                </div>
+                <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl shadow-lg p-6 text-white card-hover">
+                    <i class="fas fa-clock text-3xl mb-2"></i>
+                    <h4 class="text-sm opacity-90">Open</h4>
+                    <p id="open-requests" class="text-3xl font-bold">0</p>
+                </div>
+                <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white card-hover">
+                    <i class="fas fa-spinner text-3xl mb-2"></i>
+                    <h4 class="text-sm opacity-90">In Progress</h4>
+                    <p id="progress-requests" class="text-3xl font-bold">0</p>
+                </div>
+                <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white card-hover">
+                    <i class="fas fa-check-circle text-3xl mb-2"></i>
+                    <h4 class="text-sm opacity-90">Resolved</h4>
+                    <p id="resolved-requests" class="text-3xl font-bold">0</p>
+                </div>
             </div>
             <div class="bg-white rounded-xl shadow-lg p-6">
-                <h3 class="text-xl font-bold mb-4">All Requests</h3>
-                <div id="admin-requests-list" class="overflow-x-auto"></div>
+                <h3 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fas fa-database text-blue-600 mr-2"></i>All Citizen Requests
+                </h3>
+                <div id="admin-requests-list" class="overflow-x-auto">
+                    <p class="text-gray-500 text-center py-8">Loading requests...</p>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Production API URL
-        const API_URL = 'https://scrs-backend.onrender.com/api';
-        console.log('API URL:', API_URL);
-        console.log('Frontend version: 2.0 - Login Dashboard');
+        // Configuration - Using your live backend
+        const API_URL = 'https://scrs-api.onrender.com/api';
+        let authToken = localStorage.getItem('token');
+        let currentUser = null;
+
+        console.log('🚀 SCRS Frontend Starting...');
+        console.log('📡 Backend API:', API_URL);
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCategories();
+            setupImagePreview();
+            if (authToken) {
+                loadUserData();
+            } else {
+                showLogin();
+            }
+        });
+
+        // Setup image preview
+        function setupImagePreview() {
+            const fileInput = document.getElementById('req-photos');
+            if (fileInput) {
+                fileInput.addEventListener('change', function(e) {
+                    const preview = document.getElementById('image-preview');
+                    preview.innerHTML = '';
+                    const files = Array.from(e.target.files);
+                    files.forEach((file, index) => {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const div = document.createElement('div');
+                            div.className = 'relative';
+                            div.innerHTML = `
+                                <img src="${e.target.result}" class="w-16 h-16 object-cover rounded border">
+                                <button type="button" onclick="this.parentElement.remove()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs">×</button>
+                            `;
+                            preview.appendChild(div);
+                        };
+                        reader.readAsDataURL(file);
+                    });
+                });
+            }
+        }
+
+        // Load categories
+        async function loadCategories() {
+            try {
+                const response = await axios.get(`${API_URL}/categories`);
+                const categories = response.data.categories;
+                const select = document.getElementById('req-category');
+                if (select) {
+                    select.innerHTML = '<option value="">Select Category</option>' +
+                        categories.map(cat => `<option value="${cat.id}">${cat.name}</option>`).join('');
+                    console.log('✅ Categories loaded:', categories.length);
+                }
+            } catch (error) {
+                console.error('Error loading categories:', error);
+                // Fallback categories
+                const select = document.getElementById('req-category');
+                if (select) {
+                    select.innerHTML = `
+                        <option value="">Select Category</option>
+                        <option value="1">Roads - Pothole</option>
+                        <option value="2">Water - Leakage</option>
+                        <option value="3">Electricity - Outage</option>
+                        <option value="4">Sanitation - Garbage</option>
+                        <option value="5">Public Safety</option>
+                    `;
+                }
+            }
+        }
+
+        // UI Functions
+        function showLogin() {
+            document.getElementById('login-form').classList.remove('hidden');
+            document.getElementById('register-form').classList.add('hidden');
+            document.getElementById('citizen-dashboard').classList.add('hidden');
+            document.getElementById('admin-dashboard').classList.add('hidden');
+            document.getElementById('nav-buttons').classList.remove('hidden');
+            document.getElementById('user-info').classList.add('hidden');
+        }
+
+        function showRegister() {
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('register-form').classList.remove('hidden');
+            document.getElementById('citizen-dashboard').classList.add('hidden');
+            document.getElementById('admin-dashboard').classList.add('hidden');
+        }
+
+        // Register
+        async function register(event) {
+            event.preventDefault();
+            const data = {
+                full_name: document.getElementById('reg-name').value,
+                email: document.getElementById('reg-email').value,
+                phone: document.getElementById('reg-phone').value,
+                password: document.getElementById('reg-password').value,
+                national_id: 'TEMP' + Date.now()
+            };
+            try {
+                const response = await axios.post(`${API_URL}/auth/register`, data);
+                if (response.data.success) {
+                    alert(`✅ Registration successful!\nYour OTP: ${response.data.otp}\nPlease verify your account before logging in.`);
+                    showLogin();
+                }
+            } catch (error) {
+                alert('❌ Registration failed: ' + (error.response?.data?.message || error.message));
+            }
+        }
+
+        // Login
+        async function login(event) {
+            event.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            try {
+                const response = await axios.post(`${API_URL}/auth/login`, { email, password });
+                if (response.data.success) {
+                    authToken = response.data.token;
+                    currentUser = response.data.user;
+                    localStorage.setItem('token', authToken);
+                    localStorage.setItem('user', JSON.stringify(currentUser));
+                    await loadUserData();
+                }
+            } catch (error) {
+                alert('❌ Login failed: ' + (error.response?.data?.message || error.message));
+            }
+        }
+
+        // Load user data
+        async function loadUserData() {
+            const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+            currentUser = storedUser;
+            
+            document.getElementById('nav-buttons').classList.add('hidden');
+            document.getElementById('user-info').classList.remove('hidden');
+            document.getElementById('user-name').textContent = currentUser?.full_name || 'User';
+            document.getElementById('user-role').textContent = currentUser?.role || 'citizen';
+            document.getElementById('login-form').classList.add('hidden');
+            document.getElementById('register-form').classList.add('hidden');
+
+            if (currentUser?.role === 'super_admin' || currentUser?.role === 'department_admin') {
+                document.getElementById('admin-dashboard').classList.remove('hidden');
+                document.getElementById('citizen-dashboard').classList.add('hidden');
+                loadAdminStats();
+                loadAllRequests();
+            } else {
+                document.getElementById('citizen-dashboard').classList.remove('hidden');
+                document.getElementById('admin-dashboard').classList.add('hidden');
+                loadMyRequests();
+            }
+        }
+
+        // Submit request
+        async function submitRequest(event) {
+            event.preventDefault();
+            const formData = new FormData();
+            formData.append('category_id', document.getElementById('req-category').value);
+            formData.append('title', document.getElementById('req-title').value);
+            formData.append('description', document.getElementById('req-description').value);
+            formData.append('location_address', document.getElementById('req-location').value);
+            formData.append('priority', document.getElementById('req-priority').value);
+            
+            const photos = document.getElementById('req-photos').files;
+            for (let i = 0; i < photos.length; i++) {
+                formData.append('attachments', photos[i]);
+            }
+            
+            try {
+                const response = await axios.post(`${API_URL}/requests`, formData, {
+                    headers: { 
+                        Authorization: `Bearer ${authToken}`,
+                        'Content-Type': 'multipart/form-data'
+                    }
+                });
+                if (response.data.success) {
+                    alert(`✅ Request submitted!\n📋 Reference: ${response.data.reference_number}\n📎 Attachments: ${response.data.attachments || 0}`);
+                    document.getElementById('req-title').value = '';
+                    document.getElementById('req-description').value = '';
+                    document.getElementById('req-location').value = '';
+                    document.getElementById('req-photos').value = '';
+                    document.getElementById('image-preview').innerHTML = '';
+                    loadMyRequests();
+                }
+            } catch (error) {
+                alert('❌ Failed to submit: ' + (error.response?.data?.message || error.message));
+            }
+        }
+
+        // Load my requests
+        async function loadMyRequests() {
+            try {
+                const response = await axios.get(`${API_URL}/requests/my-requests`, {
+                    headers: { Authorization: `Bearer ${authToken}` }
+                });
+                const requests = response.data.requests || [];
+                const container = document.getElementById('requests-list');
+                
+                if (requests.length === 0) {
+                    container.innerHTML = '<div class="text-center text-gray-500 py-8"><i class="fas fa-inbox text-4xl mb-2"></i><p>No requests yet</p><p class="text-sm">Submit your first request using the form</p></div>';
+                    return;
+                }
+                
+                container.innerHTML = requests.map(req => `
+                    <div class="border rounded-lg p-4 card-hover">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-2 mb-2">
+                                    <span class="px-2 py-1 text-xs rounded-full ${getStatusColor(req.status)}">${req.status || 'open'}</span>
+                                    <span class="px-2 py-1 text-xs rounded-full ${getPriorityColor(req.priority)}">${req.priority || 'medium'}</span>
+                                </div>
+                                <h4 class="font-bold text-lg">${escapeHtml(req.title) || 'Request'}</h4>
+                                <p class="text-gray-600 text-sm mt-1">${escapeHtml((req.description || '').substring(0, 150))}${(req.description || '').length > 150 ? '...' : ''}</p>
+                                <div class="flex items-center space-x-4 mt-2">
+                                    <span class="text-xs text-gray-500"><i class="fas fa-hashtag"></i> ${req.reference_number}</span>
+                                    <span class="text-xs text-gray-500"><i class="far fa-calendar-alt"></i> ${new Date(req.created_at).toLocaleDateString()}</span>
+                                    ${req.location_address ? `<span class="text-xs text-gray-500"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(req.location_address)}</span>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading requests:', error);
+                document.getElementById('requests-list').innerHTML = '<p class="text-red-500 text-center">Error loading requests</p>';
+            }
+        }
+
+        // Admin functions
+        async function loadAdminStats() {
+            try {
+                const response = await axios.get(`${API_URL}/admin/stats`, {
+                    headers: { Authorization: `Bearer ${authToken}` }
+                });
+                const stats = response.data.stats;
+                document.getElementById('total-requests').textContent = stats.total || 0;
+                document.getElementById('open-requests').textContent = stats.open || 0;
+                document.getElementById('progress-requests').textContent = stats.inProgress || 0;
+                document.getElementById('resolved-requests').textContent = stats.resolved || 0;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        async function loadAllRequests() {
+            try {
+                const response = await axios.get(`${API_URL}/admin/requests`, {
+                    headers: { Authorization: `Bearer ${authToken}` }
+                });
+                const requests = response.data.requests || [];
+                const container = document.getElementById('admin-requests-list');
+                
+                if (requests.length === 0) {
+                    container.innerHTML = '<p class="text-gray-500 text-center py-8">No requests found</p>';
+                    return;
+                }
+                
+                container.innerHTML = `
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ref</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Citizen</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                ${requests.map(req => `
+                                    <tr class="hover:bg-gray-50">
+                                        <td class="px-4 py-3 text-sm font-mono">${req.reference_number}</td>
+                                        <td class="px-4 py-3 text-sm">${escapeHtml(req.citizen_name)}</td>
+                                        <td class="px-4 py-3 text-sm">${req.category_name || '-'}</td>
+                                        <td class="px-4 py-3 text-sm max-w-xs truncate">${escapeHtml(req.title || '-')}</td>
+                                        <td class="px-4 py-3">
+                                            <select onchange="updateStatus(${req.id}, this.value)" class="text-sm border rounded px-2 py-1">
+                                                <option value="open" ${req.status === 'open' ? 'selected' : ''}>Open</option>
+                                                <option value="in_progress" ${req.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
+                                                <option value="resolved" ${req.status === 'resolved' ? 'selected' : ''}>Resolved</option>
+                                                <option value="rejected" ${req.status === 'rejected' ? 'selected' : ''}>Rejected</option>
+                                            </select>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <span class="px-2 py-1 text-xs rounded-full ${getPriorityColor(req.priority)}">${req.priority}</span>
+                                        </td>
+                                        <td class="px-4 py-3 text-sm">${new Date(req.created_at).toLocaleDateString()}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading all requests:', error);
+                document.getElementById('admin-requests-list').innerHTML = '<p class="text-red-500 text-center">Error loading requests</p>';
+            }
+        }
+
+        // Update status (admin)
+        window.updateStatus = async function(requestId, newStatus) {
+            try {
+                await axios.put(`${API_URL}/admin/requests/${requestId}/status`, 
+                    { status: newStatus },
+                    { headers: { Authorization: `Bearer ${authToken}` } }
+                );
+                alert('✅ Status updated successfully!');
+                loadAllRequests();
+                loadAdminStats();
+            } catch (error) {
+                alert('❌ Failed to update status: ' + (error.response?.data?.message || error.message));
+            }
+        };
+
+        // Helper functions
+        function getStatusColor(status) {
+            const colors = {
+                'open': 'bg-yellow-100 text-yellow-800',
+                'in_progress': 'bg-blue-100 text-blue-800',
+                'resolved': 'bg-green-100 text-green-800',
+                'rejected': 'bg-red-100 text-red-800'
+            };
+            return colors[status] || 'bg-gray-100 text-gray-800';
+        }
+
+        function getPriorityColor(priority) {
+            const colors = {
+                'low': 'bg-gray-100 text-gray-800',
+                'medium': 'bg-blue-100 text-blue-800',
+                'high': 'bg-orange-100 text-orange-800',
+                'urgent': 'bg-red-100 text-red-800'
+            };
+            return colors[priority] || 'bg-gray-100 text-gray-800';
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function logout() {
+            localStorage.clear();
+            authToken = null;
+            currentUser = null;
+            showLogin();
+            alert('Logged out successfully');
+        }
+
+        // Make functions global
+        window.showLogin = showLogin;
+        window.showRegister = showRegister;
+        window.login = login;
+        window.register = register;
+        window.submitRequest = submitRequest;
+        window.logout = logout;
+
+        console.log('✅ Frontend ready! Backend API:', API_URL);
     </script>
-    <script src="js/app.js"></script>
 </body>
 </html>
