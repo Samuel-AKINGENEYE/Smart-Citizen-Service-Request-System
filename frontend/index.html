@@ -1,562 +1,619 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Citizen Request System</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
-        .hidden { display: none !important; }
-        .card-hover:hover { transform: translateY(-5px); transition: all 0.3s ease; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Citizen Request System</title>
+  <meta name="description" content="Submit and track city service requests — potholes, water leaks, streetlights, and more.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
 </head>
-<body class="bg-gray-50">
-    <!-- Navigation -->
-    <nav class="bg-white shadow-lg sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="flex justify-between items-center py-4">
-                <div class="flex items-center space-x-2">
-                    <i class="fas fa-city text-blue-600 text-2xl"></i>
-                    <span class="font-bold text-xl text-gray-800">Smart Citizen</span>
-                    <span class="text-sm bg-blue-100 text-blue-600 px-2 py-1 rounded">Request System</span>
-                </div>
-                <div id="nav-buttons" class="flex space-x-4">
-                    <button onclick="showLogin()" class="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition">
-                        <i class="fas fa-sign-in-alt mr-2"></i>Login
-                    </button>
-                    <button onclick="showRegister()" class="border-2 border-blue-600 text-blue-600 px-5 py-2 rounded-lg hover:bg-blue-50 transition">
-                        <i class="fas fa-user-plus mr-2"></i>Register
-                    </button>
-                </div>
-                <div id="user-info" class="hidden items-center space-x-4">
-                    <div class="flex items-center space-x-2">
-                        <i class="fas fa-user-circle text-gray-600 text-2xl"></i>
-                        <span id="user-name" class="font-medium text-gray-700"></span>
-                        <span id="user-role" class="text-xs bg-gray-200 px-2 py-1 rounded-full"></span>
-                    </div>
-                    <button onclick="logout()" class="text-red-600 hover:text-red-800">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </button>
-                </div>
-            </div>
-        </div>
-    </nav>
+<body>
 
-    <div class="container mx-auto px-4 py-8">
-        <!-- Login Form -->
-        <div id="login-form" class="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8">
-            <h2 class="text-2xl font-bold mb-6 text-center">Welcome Back</h2>
-            <form onsubmit="login(event)">
-                <div class="mb-4">
-                    <label class="block text-gray-700 mb-2">Email Address</label>
-                    <input type="email" id="login-email" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700 mb-2">Password</label>
-                    <input type="password" id="login-password" required class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                </div>
-                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
-                    Sign In
-                </button>
-            </form>
-            <p class="text-center mt-4 text-gray-600">
-                Don't have an account? <a href="#" onclick="showRegister()" class="text-blue-600">Create one</a>
-            </p>
-            <p class="text-center mt-2 text-xs text-gray-400">Demo: citizen@test.com / Citizen@123</p>
-        </div>
+  <!-- ===================================================
+       TOAST CONTAINER
+       =================================================== -->
+  <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
-        <!-- Register Form -->
-        <div id="register-form" class="max-w-md mx-auto bg-white rounded-xl shadow-lg p-8 hidden">
-            <h2 class="text-2xl font-bold mb-6 text-center">Create Account</h2>
-            <form onsubmit="register(event)">
-                <div class="mb-4">
-                    <label class="block text-gray-700 mb-2">Full Name</label>
-                    <input type="text" id="reg-name" required class="w-full px-4 py-2 border rounded-lg">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700 mb-2">Email Address</label>
-                    <input type="email" id="reg-email" required class="w-full px-4 py-2 border rounded-lg">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700 mb-2">Phone Number</label>
-                    <input type="tel" id="reg-phone" required class="w-full px-4 py-2 border rounded-lg">
-                </div>
-                <div class="mb-4">
-                    <label class="block text-gray-700 mb-2">Password</label>
-                    <input type="password" id="reg-password" required class="w-full px-4 py-2 border rounded-lg">
-                </div>
-                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
-                    Register
-                </button>
-            </form>
-            <p class="text-center mt-4">
-                Already have an account? <a href="#" onclick="showLogin()" class="text-blue-600">Sign In</a>
-            </p>
-        </div>
+  <!-- ===================================================
+       AUTH VIEW
+       =================================================== -->
+  <div id="auth-view" class="auth-view">
+    <div class="auth-card" role="main">
 
-        <!-- Citizen Dashboard -->
-        <div id="citizen-dashboard" class="hidden">
-            <div class="grid lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-1">
-                    <div class="bg-white rounded-xl shadow-lg p-6 card-hover">
-                        <h3 class="text-xl font-bold mb-4 flex items-center">
-                            <i class="fas fa-pen-alt text-blue-600 mr-2"></i>Submit New Request
-                        </h3>
-                        <form onsubmit="submitRequest(event)">
-                            <div class="mb-4">
-                                <label class="block text-gray-700 mb-2">Category</label>
-                                <select id="req-category" required class="w-full px-4 py-2 border rounded-lg">
-                                    <option value="">Select Category</option>
-                                </select>
-                            </div>
-                            <div class="mb-4">
-                                <label class="block text-gray-700 mb-2">Title</label>
-                                <input type="text" id="req-title" required class="w-full px-4 py-2 border rounded-lg">
-                            </div>
-                            <div class="mb-4">
-                                <label class="block text-gray-700 mb-2">Description</label>
-                                <textarea id="req-description" rows="3" required class="w-full px-4 py-2 border rounded-lg"></textarea>
-                            </div>
-                            <div class="mb-4">
-                                <label class="block text-gray-700 mb-2">Location</label>
-                                <input type="text" id="req-location" placeholder="Address" class="w-full px-4 py-2 border rounded-lg">
-                            </div>
-                            <div class="mb-4">
-                                <label class="block text-gray-700 mb-2">Priority</label>
-                                <select id="req-priority" class="w-full px-4 py-2 border rounded-lg">
-                                    <option value="low">Low</option>
-                                    <option value="medium" selected>Medium</option>
-                                    <option value="high">High</option>
-                                    <option value="urgent">Urgent</option>
-                                </select>
-                            </div>
-                            <div class="mb-4">
-                                <label class="block text-gray-700 mb-2">Photos (up to 5)</label>
-                                <input type="file" id="req-photos" accept="image/*" multiple class="w-full px-4 py-2 border rounded-lg">
-                                <div id="image-preview" class="mt-2 flex flex-wrap gap-2"></div>
-                                <p class="text-xs text-gray-500 mt-1">Upload images related to your issue</p>
-                            </div>
-                            <button type="submit" class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition">
-                                <i class="fas fa-paper-plane mr-2"></i>Submit Request
-                            </button>
-                        </form>
-                    </div>
-                </div>
-                <div class="lg:col-span-2">
-                    <div class="bg-white rounded-xl shadow-lg p-6">
-                        <h3 class="text-xl font-bold mb-4 flex items-center">
-                            <i class="fas fa-list-alt text-blue-600 mr-2"></i>My Requests
-                        </h3>
-                        <div id="requests-list" class="space-y-4 max-h-96 overflow-y-auto">
-                            <p class="text-gray-500 text-center py-8">Loading your requests...</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+      <!-- Logo -->
+      <div class="auth-logo">
+        <div class="auth-logo-icon" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
         </div>
+        <span class="auth-logo-name">Smart Citizen</span>
+      </div>
+      <p class="auth-tagline">Report city issues. Track resolutions.</p>
 
-        <!-- Admin Dashboard -->
-        <div id="admin-dashboard" class="hidden">
-            <div class="grid lg:grid-cols-4 gap-6 mb-8">
-                <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white card-hover">
-                    <i class="fas fa-tasks text-3xl mb-2"></i>
-                    <h4 class="text-sm opacity-90">Total Requests</h4>
-                    <p id="total-requests" class="text-3xl font-bold">0</p>
-                </div>
-                <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl shadow-lg p-6 text-white card-hover">
-                    <i class="fas fa-clock text-3xl mb-2"></i>
-                    <h4 class="text-sm opacity-90">Open</h4>
-                    <p id="open-requests" class="text-3xl font-bold">0</p>
-                </div>
-                <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white card-hover">
-                    <i class="fas fa-spinner text-3xl mb-2"></i>
-                    <h4 class="text-sm opacity-90">In Progress</h4>
-                    <p id="progress-requests" class="text-3xl font-bold">0</p>
-                </div>
-                <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-lg p-6 text-white card-hover">
-                    <i class="fas fa-check-circle text-3xl mb-2"></i>
-                    <h4 class="text-sm opacity-90">Resolved</h4>
-                    <p id="resolved-requests" class="text-3xl font-bold">0</p>
-                </div>
-            </div>
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <h3 class="text-xl font-bold mb-4 flex items-center">
-                    <i class="fas fa-database text-blue-600 mr-2"></i>All Citizen Requests
-                </h3>
-                <div id="admin-requests-list" class="overflow-x-auto">
-                    <p class="text-gray-500 text-center py-8">Loading requests...</p>
-                </div>
-            </div>
+      <!-- Tabs -->
+      <div class="auth-tabs" role="tablist" aria-label="Authentication">
+        <button class="auth-tab active" id="tab-signin" role="tab" aria-selected="true"
+                aria-controls="panel-signin" onclick="App.switchAuthTab('signin')">
+          Sign In
+        </button>
+        <button class="auth-tab" id="tab-register" role="tab" aria-selected="false"
+                aria-controls="panel-register" onclick="App.switchAuthTab('register')">
+          Create Account
+        </button>
+      </div>
+
+      <!-- Sign In Panel -->
+      <div id="panel-signin" class="auth-panel" role="tabpanel" aria-labelledby="tab-signin">
+        <div id="signin-error" class="error-banner hidden" role="alert">
+          <span class="error-banner-icon">⚠️</span>
+          <span id="signin-error-text"></span>
         </div>
+        <form id="signin-form" novalidate>
+          <div class="field-group">
+            <label for="signin-email">Email Address</label>
+            <div class="input-wrap">
+              <input type="email" id="signin-email" name="email" autocomplete="email"
+                     placeholder="you@example.com" aria-required="true"
+                     aria-describedby="signin-email-err">
+              <span class="field-status-icon" id="signin-email-icon" aria-hidden="true"></span>
+            </div>
+            <span class="field-error" id="signin-email-err" role="alert"></span>
+          </div>
+          <div class="field-group">
+            <label for="signin-password">Password</label>
+            <div class="input-wrap">
+              <input type="password" id="signin-password" name="password" autocomplete="current-password"
+                     placeholder="••••••••" aria-required="true"
+                     aria-describedby="signin-password-err">
+              <button type="button" class="pw-toggle" aria-label="Show password"
+                      onclick="App.togglePassword('signin-password', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+            <span class="field-error" id="signin-password-err" role="alert"></span>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full" id="signin-btn">
+            <span class="btn-text">Sign In</span>
+            <span class="btn-spinner hidden" aria-hidden="true"></span>
+          </button>
+        </form>
+        <p class="auth-hint">
+          Demo citizen: <code>citizen@test.com</code> / <code>Citizen@123</code><br>
+          Demo admin: <code>admin@scrs.gov</code> / <code>Admin@123</code>
+        </p>
+      </div>
+
+      <!-- Create Account Panel -->
+      <div id="panel-register" class="auth-panel hidden" role="tabpanel" aria-labelledby="tab-register">
+        <div id="register-error" class="error-banner hidden" role="alert">
+          <span class="error-banner-icon">⚠️</span>
+          <span id="register-error-text"></span>
+        </div>
+        <form id="register-form" novalidate>
+          <div class="field-group">
+            <label for="reg-name">Full Name</label>
+            <div class="input-wrap">
+              <input type="text" id="reg-name" name="full_name" autocomplete="name"
+                     placeholder="Jane Doe" aria-required="true"
+                     aria-describedby="reg-name-err">
+              <span class="field-status-icon" id="reg-name-icon" aria-hidden="true"></span>
+            </div>
+            <span class="field-error" id="reg-name-err" role="alert"></span>
+          </div>
+          <div class="field-group">
+            <label for="reg-email">Email Address</label>
+            <div class="input-wrap">
+              <input type="email" id="reg-email" name="email" autocomplete="email"
+                     placeholder="you@example.com" aria-required="true"
+                     aria-describedby="reg-email-err">
+              <span class="field-status-icon" id="reg-email-icon" aria-hidden="true"></span>
+            </div>
+            <span class="field-error" id="reg-email-err" role="alert"></span>
+          </div>
+          <div class="field-group">
+            <label for="reg-phone">Phone Number</label>
+            <div class="input-wrap">
+              <input type="tel" id="reg-phone" name="phone" autocomplete="tel"
+                     placeholder="+1 555 000 0000" aria-required="true"
+                     aria-describedby="reg-phone-err">
+              <span class="field-status-icon" id="reg-phone-icon" aria-hidden="true"></span>
+            </div>
+            <span class="field-error" id="reg-phone-err" role="alert"></span>
+          </div>
+          <div class="field-group">
+            <label for="reg-password">Password</label>
+            <div class="input-wrap">
+              <input type="password" id="reg-password" name="password" autocomplete="new-password"
+                     placeholder="Min. 6 characters" aria-required="true"
+                     aria-describedby="reg-password-err">
+              <button type="button" class="pw-toggle" aria-label="Show password"
+                      onclick="App.togglePassword('reg-password', this)">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+            <span class="field-error" id="reg-password-err" role="alert"></span>
+          </div>
+          <button type="submit" class="btn btn-primary btn-full" id="register-btn">
+            <span class="btn-text">Create Account</span>
+            <span class="btn-spinner hidden" aria-hidden="true"></span>
+          </button>
+        </form>
+      </div>
+
+      <!-- OTP Panel (shown after registration) -->
+      <div id="panel-otp" class="auth-panel hidden" role="tabpanel">
+        <div class="otp-info">
+          Registration successful! Check the reference number below. Enter your OTP to verify.
+        </div>
+        <p style="font-size:.867rem;color:var(--text-secondary);margin-bottom:4px;">Your OTP code:</p>
+        <div class="otp-code-display" id="otp-display">------</div>
+        <div class="field-group">
+          <label for="otp-input">Enter OTP</label>
+          <input type="text" id="otp-input" placeholder="6-digit code" maxlength="6"
+                 inputmode="numeric" autocomplete="one-time-code">
+        </div>
+        <button class="btn btn-primary btn-full" id="verify-btn" onclick="App.verifyOtp()">
+          <span class="btn-text">Verify Account</span>
+          <span class="btn-spinner hidden" aria-hidden="true"></span>
+        </button>
+        <button class="btn btn-secondary btn-full" style="margin-top:8px"
+                onclick="App.switchAuthTab('signin')">Back to Sign In</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===================================================
+       CITIZEN VIEW
+       =================================================== -->
+  <div id="citizen-view" class="app-view hidden">
+
+    <!-- Header -->
+    <header class="app-header" role="banner">
+      <div class="header-inner">
+        <div class="header-logo" aria-label="Smart Citizen Request System">
+          <div class="header-logo-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+          </div>
+          <span class="header-logo-name">Smart Citizen</span>
+          <span class="header-logo-tag">Request System</span>
+        </div>
+        <div class="header-user">
+          <button class="user-menu-btn" id="citizen-menu-btn" aria-haspopup="true" aria-expanded="false"
+                  onclick="App.toggleUserMenu('citizen')">
+            <div class="user-avatar" id="citizen-avatar" aria-hidden="true">?</div>
+            <span class="user-name-text" id="citizen-name"></span>
+            <svg class="chevron-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+          <div class="user-dropdown hidden" id="citizen-dropdown" role="menu">
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item danger" role="menuitem" onclick="App.logout()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
+              </svg>
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="app-main" id="citizen-main">
+
+      <!-- Stats Grid (skeleton initially) -->
+      <div class="stats-grid" id="citizen-stats-grid" aria-label="Request statistics">
+        <!-- Populated by JS (skeleton first, then real data) -->
+        <div class="stat-card-skeleton">
+          <div class="skeleton skel-icon" style="width:44px;height:44px;border-radius:10px"></div>
+          <div class="skeleton skel-text" style="width:60%"></div>
+          <div class="skeleton skel-stat-num"></div>
+        </div>
+        <div class="stat-card-skeleton">
+          <div class="skeleton skel-icon" style="width:44px;height:44px;border-radius:10px"></div>
+          <div class="skeleton skel-text" style="width:50%"></div>
+          <div class="skeleton skel-stat-num"></div>
+        </div>
+        <div class="stat-card-skeleton">
+          <div class="skeleton skel-icon" style="width:44px;height:44px;border-radius:10px"></div>
+          <div class="skeleton skel-text" style="width:55%"></div>
+          <div class="skeleton skel-stat-num"></div>
+        </div>
+        <div class="stat-card-skeleton">
+          <div class="skeleton skel-icon" style="width:44px;height:44px;border-radius:10px"></div>
+          <div class="skeleton skel-text" style="width:65%"></div>
+          <div class="skeleton skel-stat-num"></div>
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div class="cta-row">
+        <button class="btn btn-primary btn-lg btn-full" id="open-request-modal-btn"
+                onclick="App.openRequestModal()" aria-label="Submit a new service request">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Submit New Request
+        </button>
+      </div>
+
+      <!-- My Requests Section -->
+      <div class="section-header">
+        <h2 class="section-title">My Requests</h2>
+        <span class="section-count" id="citizen-req-count">—</span>
+      </div>
+
+      <div id="citizen-requests-list" class="requests-list" aria-live="polite">
+        <!-- Skeleton cards shown immediately -->
+        <div class="request-card-skel">
+          <div class="skeleton skel-icon"></div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+            <div class="skeleton skel-title" style="width:65%"></div>
+            <div style="display:flex;gap:8px">
+              <div class="skeleton skel-badge"></div>
+              <div class="skeleton skel-badge"></div>
+            </div>
+            <div class="skeleton skel-text" style="width:45%"></div>
+          </div>
+        </div>
+        <div class="request-card-skel">
+          <div class="skeleton skel-icon"></div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+            <div class="skeleton skel-title" style="width:80%"></div>
+            <div style="display:flex;gap:8px">
+              <div class="skeleton skel-badge"></div>
+              <div class="skeleton skel-badge"></div>
+            </div>
+            <div class="skeleton skel-text" style="width:55%"></div>
+          </div>
+        </div>
+        <div class="request-card-skel">
+          <div class="skeleton skel-icon"></div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+            <div class="skeleton skel-title" style="width:50%"></div>
+            <div style="display:flex;gap:8px">
+              <div class="skeleton skel-badge"></div>
+              <div class="skeleton skel-badge"></div>
+            </div>
+            <div class="skeleton skel-text" style="width:40%"></div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ===================================================
+       ADMIN VIEW
+       =================================================== -->
+  <div id="admin-view" class="app-view hidden">
+
+    <!-- Header -->
+    <header class="app-header" role="banner">
+      <div class="header-inner">
+        <div class="header-logo" aria-label="Smart Citizen Request System — Admin">
+          <div class="header-logo-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+          </div>
+          <span class="header-logo-name">Smart Citizen</span>
+          <span class="header-logo-tag">Admin</span>
+        </div>
+        <div class="header-user">
+          <button class="user-menu-btn" id="admin-menu-btn" aria-haspopup="true" aria-expanded="false"
+                  onclick="App.toggleUserMenu('admin')">
+            <div class="user-avatar" id="admin-avatar" aria-hidden="true">?</div>
+            <span class="user-name-text" id="admin-name"></span>
+            <svg class="chevron-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+          <div class="user-dropdown hidden" id="admin-dropdown" role="menu">
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-item danger" role="menuitem" onclick="App.logout()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
+              </svg>
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="admin-layout">
+      <div class="admin-content">
+        <main class="app-main">
+
+          <!-- Admin Stats -->
+          <div class="stats-grid" id="admin-stats-grid" aria-label="Request statistics">
+            <div class="stat-card-skeleton">
+              <div class="skeleton skel-icon" style="width:44px;height:44px;border-radius:10px"></div>
+              <div class="skeleton skel-text" style="width:60%"></div>
+              <div class="skeleton skel-stat-num"></div>
+            </div>
+            <div class="stat-card-skeleton">
+              <div class="skeleton skel-icon" style="width:44px;height:44px;border-radius:10px"></div>
+              <div class="skeleton skel-text" style="width:50%"></div>
+              <div class="skeleton skel-stat-num"></div>
+            </div>
+            <div class="stat-card-skeleton">
+              <div class="skeleton skel-icon" style="width:44px;height:44px;border-radius:10px"></div>
+              <div class="skeleton skel-text" style="width:55%"></div>
+              <div class="skeleton skel-stat-num"></div>
+            </div>
+            <div class="stat-card-skeleton">
+              <div class="skeleton skel-icon" style="width:44px;height:44px;border-radius:10px"></div>
+              <div class="skeleton skel-text" style="width:65%"></div>
+              <div class="skeleton skel-stat-num"></div>
+            </div>
+          </div>
+
+          <!-- Filter Bar -->
+          <div class="filter-bar" role="search" aria-label="Filter requests">
+            <div class="search-wrap">
+              <input type="search" id="admin-search" placeholder="Search by title, citizen, or reference…"
+                     aria-label="Search requests" oninput="App.adminFilter()">
+            </div>
+            <div class="select-wrap">
+              <select id="admin-status-filter" aria-label="Filter by status" onchange="App.adminFilter()">
+                <option value="">All Statuses</option>
+                <option value="open">Open</option>
+                <option value="in_progress">In Progress</option>
+                <option value="resolved">Resolved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+            </div>
+            <div class="select-wrap">
+              <select id="admin-category-filter" aria-label="Filter by category" onchange="App.adminFilter()">
+                <option value="">All Categories</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Requests Table -->
+          <div class="section-header" style="margin-bottom:12px">
+            <h2 class="section-title">All Requests</h2>
+            <span class="section-count" id="admin-req-count">—</span>
+          </div>
+
+          <div class="table-wrap" role="region" aria-label="Requests table" tabindex="0">
+            <table class="requests-table" id="admin-table" aria-label="Citizen requests">
+              <thead>
+                <tr>
+                  <th class="sortable" data-col="reference_number" onclick="App.adminSort('reference_number')"
+                      scope="col" tabindex="0" role="columnheader" aria-sort="none">
+                    Ref <span class="sort-indicator">↕</span>
+                  </th>
+                  <th scope="col">Citizen</th>
+                  <th class="sortable" data-col="category_name" onclick="App.adminSort('category_name')"
+                      scope="col" tabindex="0" role="columnheader" aria-sort="none">
+                    Category <span class="sort-indicator">↕</span>
+                  </th>
+                  <th scope="col">Title</th>
+                  <th class="sortable" data-col="status" onclick="App.adminSort('status')"
+                      scope="col" tabindex="0" role="columnheader" aria-sort="none">
+                    Status <span class="sort-indicator">↕</span>
+                  </th>
+                  <th class="sortable" data-col="priority" onclick="App.adminSort('priority')"
+                      scope="col" tabindex="0" role="columnheader" aria-sort="none">
+                    Priority <span class="sort-indicator">↕</span>
+                  </th>
+                  <th class="sortable" data-col="created_at" onclick="App.adminSort('created_at')"
+                      scope="col" tabindex="0" role="columnheader" aria-sort="none">
+                    Date <span class="sort-indicator">↕</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="admin-tbody" aria-live="polite">
+                <!-- Skeleton rows -->
+                <tr class="table-skel-row"><td colspan="7"><div class="skeleton skel-text" style="width:80%"></div></td></tr>
+                <tr class="table-skel-row"><td colspan="7"><div class="skeleton skel-text" style="width:70%"></div></td></tr>
+                <tr class="table-skel-row"><td colspan="7"><div class="skeleton skel-text" style="width:75%"></div></td></tr>
+                <tr class="table-skel-row"><td colspan="7"><div class="skeleton skel-text" style="width:65%"></div></td></tr>
+                <tr class="table-skel-row"><td colspan="7"><div class="skeleton skel-text" style="width:85%"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="pagination" id="admin-pagination" aria-label="Table pagination"></div>
+
+        </main>
+      </div>
+
+      <!-- Side Panel -->
+      <aside class="side-panel hidden" id="admin-side-panel" role="complementary" aria-label="Request details">
+        <div class="panel-header">
+          <h3 class="panel-title" id="panel-ref">Request Details</h3>
+          <button class="btn-icon" id="close-panel-btn" aria-label="Close request detail panel"
+                  onclick="App.closeSidePanel()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div class="panel-body" id="panel-body"></div>
+      </aside>
     </div>
 
-    <script>
-        // Configuration - Using your live backend
-        const API_URL = 'https://scrs-api.onrender.com/api';
-        let authToken = localStorage.getItem('token');
-        let currentUser = null;
+  </div>
 
-        console.log('🚀 SCRS Frontend Starting...');
-        console.log('📡 Backend API:', API_URL);
+  <!-- ===================================================
+       SUBMIT REQUEST MODAL
+       =================================================== -->
+  <div class="modal-overlay hidden" id="request-modal" role="dialog" aria-modal="true"
+       aria-labelledby="modal-title-text">
+    <div class="modal" role="document">
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            loadCategories();
-            setupImagePreview();
-            if (authToken) {
-                loadUserData();
-            } else {
-                showLogin();
-            }
-        });
+      <div class="modal-header">
+        <h2 class="modal-title" id="modal-title-text">Submit New Request</h2>
+        <button class="btn-icon" id="close-modal-btn" aria-label="Close form"
+                onclick="App.closeRequestModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
 
-        // Setup image preview
-        function setupImagePreview() {
-            const fileInput = document.getElementById('req-photos');
-            if (fileInput) {
-                fileInput.addEventListener('change', function(e) {
-                    const preview = document.getElementById('image-preview');
-                    preview.innerHTML = '';
-                    const files = Array.from(e.target.files);
-                    files.forEach((file, index) => {
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            const div = document.createElement('div');
-                            div.className = 'relative';
-                            div.innerHTML = `
-                                <img src="${e.target.result}" class="w-16 h-16 object-cover rounded border">
-                                <button type="button" onclick="this.parentElement.remove()" class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs">×</button>
-                            `;
-                            preview.appendChild(div);
-                        };
-                        reader.readAsDataURL(file);
-                    });
-                });
-            }
-        }
+      <!-- Step Progress -->
+      <div class="step-progress" role="progressbar" aria-valuemin="1" aria-valuemax="4"
+           aria-valuenow="1" aria-label="Form progress" id="step-progress-bar">
+        <div class="step-item active" id="step-indicator-1">
+          <div class="step-num" aria-hidden="true">1</div>
+          <span class="step-label">Category</span>
+        </div>
+        <div class="step-connector" id="step-conn-1"></div>
+        <div class="step-item" id="step-indicator-2">
+          <div class="step-num" aria-hidden="true">2</div>
+          <span class="step-label">Details</span>
+        </div>
+        <div class="step-connector" id="step-conn-2"></div>
+        <div class="step-item" id="step-indicator-3">
+          <div class="step-num" aria-hidden="true">3</div>
+          <span class="step-label">Photos</span>
+        </div>
+        <div class="step-connector" id="step-conn-3"></div>
+        <div class="step-item" id="step-indicator-4">
+          <div class="step-num" aria-hidden="true">4</div>
+          <span class="step-label">Review</span>
+        </div>
+      </div>
 
-        // Load categories
-        async function loadCategories() {
-            try {
-                const response = await axios.get(`${API_URL}/categories`);
-                const categories = response.data.categories;
-                const select = document.getElementById('req-category');
-                if (select) {
-                    select.innerHTML = '<option value="">Select Category</option>' +
-                        categories.map(cat => `<option value="${cat.id}">${cat.name}</option>`).join('');
-                    console.log('✅ Categories loaded:', categories.length);
-                }
-            } catch (error) {
-                console.error('Error loading categories:', error);
-                // Fallback categories
-                const select = document.getElementById('req-category');
-                if (select) {
-                    select.innerHTML = `
-                        <option value="">Select Category</option>
-                        <option value="1">Roads - Pothole</option>
-                        <option value="2">Water - Leakage</option>
-                        <option value="3">Electricity - Outage</option>
-                        <option value="4">Sanitation - Garbage</option>
-                        <option value="5">Public Safety</option>
-                    `;
-                }
-            }
-        }
+      <div class="modal-body">
 
-        // UI Functions
-        function showLogin() {
-            document.getElementById('login-form').classList.remove('hidden');
-            document.getElementById('register-form').classList.add('hidden');
-            document.getElementById('citizen-dashboard').classList.add('hidden');
-            document.getElementById('admin-dashboard').classList.add('hidden');
-            document.getElementById('nav-buttons').classList.remove('hidden');
-            document.getElementById('user-info').classList.add('hidden');
-        }
+        <!-- STEP 1: Category -->
+        <div class="step-panel active" id="step-panel-1" role="group" aria-labelledby="step1-heading">
+          <p id="step1-heading" style="font-size:.867rem;color:var(--text-secondary);margin-bottom:14px;">
+            Choose the category that best describes your issue.
+          </p>
+          <div class="category-grid" id="category-grid" aria-label="Service categories">
+            <!-- Populated by JS -->
+            <div class="skeleton" style="height:100px;border-radius:var(--r-card)"></div>
+            <div class="skeleton" style="height:100px;border-radius:var(--r-card)"></div>
+            <div class="skeleton" style="height:100px;border-radius:var(--r-card)"></div>
+            <div class="skeleton" style="height:100px;border-radius:var(--r-card)"></div>
+            <div class="skeleton" style="height:100px;border-radius:var(--r-card)"></div>
+            <div class="skeleton" style="height:100px;border-radius:var(--r-card)"></div>
+          </div>
+          <div id="step1-error" class="field-error" style="margin-top:10px" role="alert"></div>
+        </div>
 
-        function showRegister() {
-            document.getElementById('login-form').classList.add('hidden');
-            document.getElementById('register-form').classList.remove('hidden');
-            document.getElementById('citizen-dashboard').classList.add('hidden');
-            document.getElementById('admin-dashboard').classList.add('hidden');
-        }
+        <!-- STEP 2: Details -->
+        <div class="step-panel" id="step-panel-2" role="group" aria-labelledby="step2-heading">
+          <p id="step2-heading" class="sr-only">Provide details about your issue</p>
+          <div class="field-group">
+            <label for="req-title">
+              Title <span class="required" aria-hidden="true">*</span>
+            </label>
+            <div class="input-wrap">
+              <input type="text" id="req-title" maxlength="100" placeholder="e.g. Large pothole on Main St near intersection"
+                     aria-required="true" aria-describedby="title-count req-title-err">
+              <span class="field-status-icon" id="req-title-icon" aria-hidden="true"></span>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span class="field-error" id="req-title-err" role="alert"></span>
+              <span class="char-count" id="title-count" aria-live="polite">0 / 100</span>
+            </div>
+          </div>
+          <div class="field-group">
+            <label for="req-description">
+              Description <span class="required" aria-hidden="true">*</span>
+            </label>
+            <textarea id="req-description" rows="4" maxlength="500"
+                      placeholder="Describe the issue in detail — when you noticed it, the impact, and any other relevant information."
+                      aria-required="true" aria-describedby="desc-count req-desc-err"></textarea>
+            <div style="display:flex;justify-content:space-between;align-items:center">
+              <span class="field-error" id="req-desc-err" role="alert"></span>
+              <span class="char-count" id="desc-count" aria-live="polite">0 / 500</span>
+            </div>
+          </div>
+          <div class="field-group">
+            <label for="req-location">Location</label>
+            <input type="text" id="req-location" placeholder="Street address or nearby landmark">
+          </div>
+        </div>
 
-        // Register
-        async function register(event) {
-            event.preventDefault();
-            const data = {
-                full_name: document.getElementById('reg-name').value,
-                email: document.getElementById('reg-email').value,
-                phone: document.getElementById('reg-phone').value,
-                password: document.getElementById('reg-password').value,
-                national_id: 'TEMP' + Date.now()
-            };
-            try {
-                const response = await axios.post(`${API_URL}/auth/register`, data);
-                if (response.data.success) {
-                    alert(`✅ Registration successful!\nYour OTP: ${response.data.otp}\nPlease verify your account before logging in.`);
-                    showLogin();
-                }
-            } catch (error) {
-                alert('❌ Registration failed: ' + (error.response?.data?.message || error.message));
-            }
-        }
+        <!-- STEP 3: Priority + Photos -->
+        <div class="step-panel" id="step-panel-3" role="group" aria-labelledby="step3-heading">
+          <p id="step3-heading" class="sr-only">Set priority and attach photos</p>
+          <div class="field-group" style="margin-bottom:24px">
+            <label>Priority <span class="required" aria-hidden="true">*</span></label>
+            <div class="priority-grid" role="radiogroup" aria-label="Request priority">
+              <label class="priority-option">
+                <input type="radio" name="req-priority" value="low" aria-label="Low priority"> Low
+              </label>
+              <label class="priority-option">
+                <input type="radio" name="req-priority" value="medium" checked aria-label="Medium priority"> Medium
+              </label>
+              <label class="priority-option">
+                <input type="radio" name="req-priority" value="high" aria-label="High priority"> High
+              </label>
+              <label class="priority-option">
+                <input type="radio" name="req-priority" value="urgent" aria-label="Urgent priority"> Urgent
+              </label>
+            </div>
+          </div>
+          <div class="field-group">
+            <label>Photos <span style="font-weight:400;color:var(--text-muted)">(optional, max 5)</span></label>
+            <div class="dropzone" id="dropzone" role="button" tabindex="0"
+                 aria-label="Upload photos — drag and drop or click to browse">
+              <div class="dropzone-icon" aria-hidden="true">📷</div>
+              <p class="dropzone-text">
+                Drag & drop photos here, or
+                <span class="dropzone-link" onclick="document.getElementById('photo-input').click()">browse</span>
+              </p>
+              <p class="dropzone-hint">PNG, JPG, WEBP up to 10MB each</p>
+              <input type="file" id="photo-input" accept="image/*" multiple
+                     aria-label="Choose photo files" style="display:none">
+            </div>
+            <div class="photo-previews" id="photo-previews" aria-label="Photo previews"></div>
+          </div>
+        </div>
 
-        // Login
-        async function login(event) {
-            event.preventDefault();
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            try {
-                const response = await axios.post(`${API_URL}/auth/login`, { email, password });
-                if (response.data.success) {
-                    authToken = response.data.token;
-                    currentUser = response.data.user;
-                    localStorage.setItem('token', authToken);
-                    localStorage.setItem('user', JSON.stringify(currentUser));
-                    await loadUserData();
-                }
-            } catch (error) {
-                alert('❌ Login failed: ' + (error.response?.data?.message || error.message));
-            }
-        }
+        <!-- STEP 4: Review -->
+        <div class="step-panel" id="step-panel-4" role="group" aria-labelledby="step4-heading">
+          <p id="step4-heading" style="font-size:.867rem;color:var(--text-secondary);margin-bottom:14px;">
+            Review your request before submitting.
+          </p>
+          <div class="review-summary" id="review-content" aria-label="Request summary">
+            <!-- Populated by JS -->
+          </div>
+        </div>
 
-        // Load user data
-        async function loadUserData() {
-            const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
-            currentUser = storedUser;
-            
-            document.getElementById('nav-buttons').classList.add('hidden');
-            document.getElementById('user-info').classList.remove('hidden');
-            document.getElementById('user-name').textContent = currentUser?.full_name || 'User';
-            document.getElementById('user-role').textContent = currentUser?.role || 'citizen';
-            document.getElementById('login-form').classList.add('hidden');
-            document.getElementById('register-form').classList.add('hidden');
+      </div>
 
-            if (currentUser?.role === 'super_admin' || currentUser?.role === 'department_admin') {
-                document.getElementById('admin-dashboard').classList.remove('hidden');
-                document.getElementById('citizen-dashboard').classList.add('hidden');
-                loadAdminStats();
-                loadAllRequests();
-            } else {
-                document.getElementById('citizen-dashboard').classList.remove('hidden');
-                document.getElementById('admin-dashboard').classList.add('hidden');
-                loadMyRequests();
-            }
-        }
+      <!-- Modal Footer -->
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="modal-back-btn" onclick="App.modalBack()" style="display:none">
+          Back
+        </button>
+        <button class="btn btn-primary" id="modal-next-btn" onclick="App.modalNext()">
+          <span class="btn-text">Next</span>
+          <span class="btn-spinner hidden" aria-hidden="true"></span>
+        </button>
+      </div>
 
-        // Submit request
-        async function submitRequest(event) {
-            event.preventDefault();
-            const formData = new FormData();
-            formData.append('category_id', document.getElementById('req-category').value);
-            formData.append('title', document.getElementById('req-title').value);
-            formData.append('description', document.getElementById('req-description').value);
-            formData.append('location_address', document.getElementById('req-location').value);
-            formData.append('priority', document.getElementById('req-priority').value);
-            
-            const photos = document.getElementById('req-photos').files;
-            for (let i = 0; i < photos.length; i++) {
-                formData.append('attachments', photos[i]);
-            }
-            
-            try {
-                const response = await axios.post(`${API_URL}/requests`, formData, {
-                    headers: { 
-                        Authorization: `Bearer ${authToken}`,
-                        'Content-Type': 'multipart/form-data'
-                    }
-                });
-                if (response.data.success) {
-                    alert(`✅ Request submitted!\n📋 Reference: ${response.data.reference_number}\n📎 Attachments: ${response.data.attachments || 0}`);
-                    document.getElementById('req-title').value = '';
-                    document.getElementById('req-description').value = '';
-                    document.getElementById('req-location').value = '';
-                    document.getElementById('req-photos').value = '';
-                    document.getElementById('image-preview').innerHTML = '';
-                    loadMyRequests();
-                }
-            } catch (error) {
-                alert('❌ Failed to submit: ' + (error.response?.data?.message || error.message));
-            }
-        }
+    </div>
+  </div>
 
-        // Load my requests
-        async function loadMyRequests() {
-            try {
-                const response = await axios.get(`${API_URL}/requests/my-requests`, {
-                    headers: { Authorization: `Bearer ${authToken}` }
-                });
-                const requests = response.data.requests || [];
-                const container = document.getElementById('requests-list');
-                
-                if (requests.length === 0) {
-                    container.innerHTML = '<div class="text-center text-gray-500 py-8"><i class="fas fa-inbox text-4xl mb-2"></i><p>No requests yet</p><p class="text-sm">Submit your first request using the form</p></div>';
-                    return;
-                }
-                
-                container.innerHTML = requests.map(req => `
-                    <div class="border rounded-lg p-4 card-hover">
-                        <div class="flex justify-between items-start">
-                            <div class="flex-1">
-                                <div class="flex items-center space-x-2 mb-2">
-                                    <span class="px-2 py-1 text-xs rounded-full ${getStatusColor(req.status)}">${req.status || 'open'}</span>
-                                    <span class="px-2 py-1 text-xs rounded-full ${getPriorityColor(req.priority)}">${req.priority || 'medium'}</span>
-                                </div>
-                                <h4 class="font-bold text-lg">${escapeHtml(req.title) || 'Request'}</h4>
-                                <p class="text-gray-600 text-sm mt-1">${escapeHtml((req.description || '').substring(0, 150))}${(req.description || '').length > 150 ? '...' : ''}</p>
-                                <div class="flex items-center space-x-4 mt-2">
-                                    <span class="text-xs text-gray-500"><i class="fas fa-hashtag"></i> ${req.reference_number}</span>
-                                    <span class="text-xs text-gray-500"><i class="far fa-calendar-alt"></i> ${new Date(req.created_at).toLocaleDateString()}</span>
-                                    ${req.location_address ? `<span class="text-xs text-gray-500"><i class="fas fa-map-marker-alt"></i> ${escapeHtml(req.location_address)}</span>` : ''}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `).join('');
-            } catch (error) {
-                console.error('Error loading requests:', error);
-                document.getElementById('requests-list').innerHTML = '<p class="text-red-500 text-center">Error loading requests</p>';
-            }
-        }
-
-        // Admin functions
-        async function loadAdminStats() {
-            try {
-                const response = await axios.get(`${API_URL}/admin/stats`, {
-                    headers: { Authorization: `Bearer ${authToken}` }
-                });
-                const stats = response.data.stats;
-                document.getElementById('total-requests').textContent = stats.total || 0;
-                document.getElementById('open-requests').textContent = stats.open || 0;
-                document.getElementById('progress-requests').textContent = stats.inProgress || 0;
-                document.getElementById('resolved-requests').textContent = stats.resolved || 0;
-            } catch (error) {
-                console.error('Error loading stats:', error);
-            }
-        }
-
-        async function loadAllRequests() {
-            try {
-                const response = await axios.get(`${API_URL}/admin/requests`, {
-                    headers: { Authorization: `Bearer ${authToken}` }
-                });
-                const requests = response.data.requests || [];
-                const container = document.getElementById('admin-requests-list');
-                
-                if (requests.length === 0) {
-                    container.innerHTML = '<p class="text-gray-500 text-center py-8">No requests found</p>';
-                    return;
-                }
-                
-                container.innerHTML = `
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ref</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Citizen</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Priority</th>
-                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                ${requests.map(req => `
-                                    <tr class="hover:bg-gray-50">
-                                        <td class="px-4 py-3 text-sm font-mono">${req.reference_number}</td>
-                                        <td class="px-4 py-3 text-sm">${escapeHtml(req.citizen_name)}</td>
-                                        <td class="px-4 py-3 text-sm">${req.category_name || '-'}</td>
-                                        <td class="px-4 py-3 text-sm max-w-xs truncate">${escapeHtml(req.title || '-')}</td>
-                                        <td class="px-4 py-3">
-                                            <select onchange="updateStatus(${req.id}, this.value)" class="text-sm border rounded px-2 py-1">
-                                                <option value="open" ${req.status === 'open' ? 'selected' : ''}>Open</option>
-                                                <option value="in_progress" ${req.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
-                                                <option value="resolved" ${req.status === 'resolved' ? 'selected' : ''}>Resolved</option>
-                                                <option value="rejected" ${req.status === 'rejected' ? 'selected' : ''}>Rejected</option>
-                                            </select>
-                                        </td>
-                                        <td class="px-4 py-3">
-                                            <span class="px-2 py-1 text-xs rounded-full ${getPriorityColor(req.priority)}">${req.priority}</span>
-                                        </td>
-                                        <td class="px-4 py-3 text-sm">${new Date(req.created_at).toLocaleDateString()}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-            } catch (error) {
-                console.error('Error loading all requests:', error);
-                document.getElementById('admin-requests-list').innerHTML = '<p class="text-red-500 text-center">Error loading requests</p>';
-            }
-        }
-
-        // Update status (admin)
-        window.updateStatus = async function(requestId, newStatus) {
-            try {
-                await axios.put(`${API_URL}/admin/requests/${requestId}/status`, 
-                    { status: newStatus },
-                    { headers: { Authorization: `Bearer ${authToken}` } }
-                );
-                alert('✅ Status updated successfully!');
-                loadAllRequests();
-                loadAdminStats();
-            } catch (error) {
-                alert('❌ Failed to update status: ' + (error.response?.data?.message || error.message));
-            }
-        };
-
-        // Helper functions
-        function getStatusColor(status) {
-            const colors = {
-                'open': 'bg-yellow-100 text-yellow-800',
-                'in_progress': 'bg-blue-100 text-blue-800',
-                'resolved': 'bg-green-100 text-green-800',
-                'rejected': 'bg-red-100 text-red-800'
-            };
-            return colors[status] || 'bg-gray-100 text-gray-800';
-        }
-
-        function getPriorityColor(priority) {
-            const colors = {
-                'low': 'bg-gray-100 text-gray-800',
-                'medium': 'bg-blue-100 text-blue-800',
-                'high': 'bg-orange-100 text-orange-800',
-                'urgent': 'bg-red-100 text-red-800'
-            };
-            return colors[priority] || 'bg-gray-100 text-gray-800';
-        }
-
-        function escapeHtml(text) {
-            if (!text) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        function logout() {
-            localStorage.clear();
-            authToken = null;
-            currentUser = null;
-            showLogin();
-            alert('Logged out successfully');
-        }
-
-        // Make functions global
-        window.showLogin = showLogin;
-        window.showRegister = showRegister;
-        window.login = login;
-        window.register = register;
-        window.submitRequest = submitRequest;
-        window.logout = logout;
-
-        console.log('✅ Frontend ready! Backend API:', API_URL);
-    </script>
+  <!-- Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/app.js"></script>
 </body>
 </html>
