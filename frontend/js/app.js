@@ -2,28 +2,18 @@
    SMART CITIZEN REQUEST SYSTEM — App Controller
    ============================================================ */
 
-/* Declare App namespace first so all App.method= assignments work */
 const App = window.App = {};
 
 /* ---- State ---- */
 const state = {
   token: null,
-  user: null,
+  user:  null,
   categories: [],
   myRequests: [],
   adminRequests: [],
   adminFiltered: [],
   adminStats: null,
-  form: {
-    step: 1,
-    categoryId: null,
-    categoryName: '',
-    title: '',
-    description: '',
-    location: '',
-    priority: 'medium',
-    photos: [],
-  },
+  form: { step: 1, categoryId: null, categoryName: '', title: '', description: '', location: '', priority: 'medium', photos: [] },
   adminSortCol: 'created_at',
   adminSortDir: 'desc',
   adminPage: 1,
@@ -34,6 +24,8 @@ const state = {
   selectedRequestId: null,
   lightboxAttachments: [],
   lightboxIndex: 0,
+  ratingValue: 0,
+  ratingRequestId: null,
 };
 
 /* ============================================================
@@ -42,11 +34,10 @@ const state = {
 const Toast = {
   show(title, message, type) {
     message = message || '';
-    type = type || 'info';
+    type    = type    || 'info';
     const icons = { success: '✅', error: '❌', info: 'ℹ️', warning: '⚠️' };
     const container = document.getElementById('toast-container');
     if (!container) return;
-
     const toast = document.createElement('div');
     toast.className = `toast toast-${type}`;
     toast.setAttribute('role', 'alert');
@@ -56,17 +47,13 @@ const Toast = {
         '<div class="toast-title">' + escapeHtml(title) + '</div>' +
         (message ? '<div class="toast-msg">' + escapeHtml(message) + '</div>' : '') +
       '</div>' +
-      '<button class="toast-close" aria-label="Dismiss notification">×</button>' +
+      '<button class="toast-close" aria-label="Dismiss">×</button>' +
       '<div class="toast-progress"></div>';
-
-    toast.querySelector('.toast-close').addEventListener('click', function() {
-      Toast._dismiss(toast);
-    });
+    toast.querySelector('.toast-close').addEventListener('click', function() { Toast._dismiss(toast); });
     container.appendChild(toast);
-    toast._timer = setTimeout(function() { Toast._dismiss(toast); }, 4000);
+    toast._timer = setTimeout(function() { Toast._dismiss(toast); }, 4500);
   },
-
-  _dismiss: function(toast) {
+  _dismiss(toast) {
     clearTimeout(toast._timer);
     toast.classList.add('toast-exit');
     setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
@@ -79,18 +66,20 @@ const Toast = {
 function escapeHtml(str) {
   if (!str && str !== 0) return '';
   return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 function formatDate(dateStr) {
   if (!dateStr) return '—';
-  try {
-    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  } catch (e) { return dateStr; }
+  try { return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
+  catch (e) { return dateStr; }
+}
+
+function formatDateTime(dateStr) {
+  if (!dateStr) return '—';
+  try { return new Date(dateStr).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+  catch (e) { return dateStr; }
 }
 
 function getInitials(name) {
@@ -108,15 +97,15 @@ function formatBytes(bytes) {
 function setButtonLoading(btnId, loading) {
   var btn = document.getElementById(btnId);
   if (!btn) return;
+  btn.disabled = loading;
   var text    = btn.querySelector('.btn-text');
   var spinner = btn.querySelector('.btn-spinner');
-  btn.disabled = loading;
   if (text)    text.style.opacity = loading ? '0' : '1';
   if (spinner) spinner.classList.toggle('hidden', !loading);
 }
 
 function showView(id) {
-  ['auth-view', 'citizen-view', 'admin-view'].forEach(function(v) {
+  ['auth-view','citizen-view','admin-view'].forEach(function(v) {
     var el = document.getElementById(v);
     if (el) el.classList.add('hidden');
   });
@@ -128,19 +117,18 @@ function showView(id) {
    CATEGORY METADATA
    ============================================================ */
 function getCategoryMeta(name) {
-  name = name || '';
-  var n = name.toLowerCase();
-  if (n.indexOf('road') > -1 || n.indexOf('pothole') > -1 || n.indexOf('street') > -1)
+  name = (name || '').toLowerCase();
+  if (name.indexOf('road') > -1 || name.indexOf('pothole') > -1)
     return { emoji: '🛣️', color: '#F97316', bg: '#FFF7ED' };
-  if (n.indexOf('water') > -1 || n.indexOf('leakage') > -1 || n.indexOf('supply') > -1)
+  if (name.indexOf('water') > -1 || name.indexOf('leakage') > -1)
     return { emoji: '💧', color: '#3B82F6', bg: '#EFF6FF' };
-  if (n.indexOf('electric') > -1 || n.indexOf('power') > -1 || n.indexOf('light') > -1)
+  if (name.indexOf('electric') > -1 || name.indexOf('light') > -1)
     return { emoji: '⚡', color: '#EAB308', bg: '#FEFCE8' };
-  if (n.indexOf('sanitation') > -1 || n.indexOf('garbage') > -1 || n.indexOf('drain') > -1)
+  if (name.indexOf('sanitation') > -1 || name.indexOf('garbage') > -1)
     return { emoji: '🗑️', color: '#10B981', bg: '#ECFDF5' };
-  if (n.indexOf('safety') > -1 || n.indexOf('security') > -1)
+  if (name.indexOf('safety') > -1 || name.indexOf('security') > -1)
     return { emoji: '🚨', color: '#EF4444', bg: '#FEF2F2' };
-  if (n.indexOf('park') > -1 || n.indexOf('tree') > -1)
+  if (name.indexOf('park') > -1 || name.indexOf('tree') > -1)
     return { emoji: '🌳', color: '#22C55E', bg: '#F0FDF4' };
   return { emoji: '📋', color: '#6366F1', bg: '#EEF2FF' };
 }
@@ -158,10 +146,59 @@ function statusBadge(status) {
 }
 
 function priorityBadge(priority) {
-  var p = priority || 'medium';
+  var p       = priority || 'medium';
   var classMap = { low: 'badge-low', medium: 'badge-medium', high: 'badge-high', urgent: 'badge-urgent-p' };
-  var label = p.charAt(0).toUpperCase() + p.slice(1);
+  var label   = p.charAt(0).toUpperCase() + p.slice(1);
   return '<span class="badge ' + (classMap[p] || 'badge-low') + '" aria-label="Priority: ' + label + '">' + label + '</span>';
+}
+
+/* ============================================================
+   GAMIFICATION DISPLAY
+   ============================================================ */
+var GAMIFICATION_LEVELS = [
+  { level: 1, name: 'Newcomer',        emoji: '🌱', minPts: 0,   maxPts: 29  },
+  { level: 2, name: 'Engaged Citizen', emoji: '🏅', minPts: 30,  maxPts: 99  },
+  { level: 3, name: 'Active Citizen',  emoji: '⭐', minPts: 100, maxPts: 199 },
+  { level: 4, name: 'Community Hero',  emoji: '🌟', minPts: 200, maxPts: 499 },
+  { level: 5, name: 'City Champion',   emoji: '🏆', minPts: 500, maxPts: 9999 },
+];
+
+function getLevelInfo(points) {
+  var pts = points || 0;
+  for (var i = GAMIFICATION_LEVELS.length - 1; i >= 0; i--) {
+    if (pts >= GAMIFICATION_LEVELS[i].minPts) return GAMIFICATION_LEVELS[i];
+  }
+  return GAMIFICATION_LEVELS[0];
+}
+
+function renderGamification(points) {
+  var pts     = points || 0;
+  var info    = getLevelInfo(pts);
+  var nextLvl = GAMIFICATION_LEVELS[Math.min(info.level, GAMIFICATION_LEVELS.length - 1)];
+  var progress = info.level >= 5 ? 100 :
+    Math.round(((pts - info.minPts) / (nextLvl.minPts - info.minPts)) * 100);
+  var toNext   = info.level >= 5 ? 0 : nextLvl.minPts - pts;
+
+  // Header badge
+  var hdrIcon   = document.getElementById('header-badge-icon');
+  var hdrPoints = document.getElementById('header-points');
+  if (hdrIcon)   hdrIcon.textContent   = info.emoji;
+  if (hdrPoints) hdrPoints.textContent = pts + ' pts';
+
+  // Level card
+  var lvlNum  = document.getElementById('xp-level-num');
+  var badgeName = document.getElementById('xp-badge-name');
+  var ptsVal  = document.getElementById('xp-pts-value');
+  var ptsNext = document.getElementById('xp-pts-next');
+  var progBar = document.getElementById('xp-progress-bar');
+  var avatar  = document.getElementById('xp-avatar-emoji');
+
+  if (lvlNum)    lvlNum.textContent    = info.level;
+  if (badgeName) badgeName.textContent = info.name;
+  if (ptsVal)    ptsVal.textContent    = pts;
+  if (avatar)    avatar.textContent    = info.emoji;
+  if (ptsNext)   ptsNext.textContent   = info.level >= 5 ? 'Max level reached! 🏆' : toNext + ' pts to next level';
+  if (progBar)   progBar.style.width   = progress + '%';
 }
 
 /* ============================================================
@@ -175,28 +212,22 @@ var Validator = {
     phone:    { test: function(v) { return /^[+\d\s\-()]{7,}$/.test(v); }, msg: 'Enter a valid phone number' },
     required: { test: function(v) { return v.trim().length > 0; }, msg: 'This field is required' },
   },
-
   validate: function(inputEl, ruleKey, errId, iconId) {
-    var val  = inputEl.value;
-    var rule = this.rules[ruleKey];
+    var val    = inputEl.value;
+    var rule   = this.rules[ruleKey];
     var errEl  = errId  ? document.getElementById(errId)  : null;
     var iconEl = iconId ? document.getElementById(iconId) : null;
-
     if (!val) {
       inputEl.classList.remove('field-valid', 'field-invalid');
       if (errEl)  errEl.textContent  = '';
       if (iconEl) iconEl.textContent = '';
       return null;
     }
-
     var ok = rule.test(val);
     inputEl.classList.toggle('field-valid',   ok);
     inputEl.classList.toggle('field-invalid', !ok);
     if (errEl)  errEl.textContent  = ok ? '' : rule.msg;
-    if (iconEl) {
-      iconEl.textContent = ok ? '✓' : '✗';
-      iconEl.style.color = ok ? 'var(--border-ok)' : 'var(--border-error)';
-    }
+    if (iconEl) { iconEl.textContent = ok ? '✓' : '✗'; iconEl.style.color = ok ? 'var(--border-ok)' : 'var(--border-error)'; }
     return ok;
   },
 };
@@ -210,35 +241,43 @@ App.socialLogin = function(provider) {
 };
 
 /* ============================================================
-   RESEND OTP
+   OTP RESEND + TIMER
    ============================================================ */
 App.resendOtp = function() {
   var otpInput = document.getElementById('otp-input');
   var email    = otpInput ? otpInput.dataset.email : '';
-  if (!email) {
-    Toast.show('Error', 'Email not found. Please go back and try again.', 'error');
-    return;
-  }
+  if (!email) { Toast.show('Error', 'Email not found. Please go back and try again.', 'error'); return; }
 
   var resendBtn = document.getElementById('resend-btn');
-  if (resendBtn) { resendBtn.disabled = true; resendBtn.textContent = 'Sending…'; }
+  var timerEl   = document.getElementById('resend-timer');
+  if (resendBtn) { resendBtn.disabled = true; resendBtn.classList.add('hidden'); }
+  if (timerEl)   timerEl.classList.remove('hidden');
 
   API.auth.resendOtp(email)
     .then(function() {
-      Toast.show('Code resent', 'Check your email for a new verification code.', 'success');
+      Toast.show('Code resent! ✉️', 'Check your inbox for a new 6-digit verification code.', 'success');
+      _startResendTimer(60, timerEl, resendBtn);
     })
     .catch(function(err) {
       Toast.show('Failed to resend', err.message || 'Please try again shortly.', 'error');
-    })
-    .finally(function() {
-      if (resendBtn) {
-        setTimeout(function() {
-          resendBtn.disabled    = false;
-          resendBtn.textContent = 'Resend';
-        }, 30000);
-      }
+      if (resendBtn) { resendBtn.disabled = false; resendBtn.classList.remove('hidden'); }
+      if (timerEl)   timerEl.classList.add('hidden');
     });
 };
+
+function _startResendTimer(seconds, timerEl, btn) {
+  var remaining = seconds;
+  if (timerEl) timerEl.textContent = 'Resend in ' + remaining + 's';
+  var interval = setInterval(function() {
+    remaining--;
+    if (timerEl) timerEl.textContent = 'Resend in ' + remaining + 's';
+    if (remaining <= 0) {
+      clearInterval(interval);
+      if (timerEl) timerEl.classList.add('hidden');
+      if (btn) { btn.disabled = false; btn.classList.remove('hidden'); }
+    }
+  }, 1000);
+}
 
 /* ============================================================
    PASSWORD TOGGLE
@@ -251,15 +290,9 @@ App.togglePassword = function(inputId, btn) {
   btn.setAttribute('aria-label', isPassword ? 'Hide password' : 'Show password');
   var svg = btn.querySelector('svg');
   if (!svg) return;
-  if (isPassword) {
-    svg.innerHTML =
-      '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/>' +
-      '<path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/>' +
-      '<line x1="1" y1="1" x2="23" y2="23"/>';
-  } else {
-    svg.innerHTML =
-      '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
-  }
+  svg.innerHTML = isPassword
+    ? '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>'
+    : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
 };
 
 /* ============================================================
@@ -275,7 +308,7 @@ App.toggleUserMenu = function(prefix) {
 };
 
 document.addEventListener('click', function(e) {
-  ['citizen', 'admin'].forEach(function(prefix) {
+  ['citizen','admin'].forEach(function(prefix) {
     var btn  = document.getElementById(prefix + '-menu-btn');
     var menu = document.getElementById(prefix + '-dropdown');
     if (btn && menu && !btn.contains(e.target) && !menu.contains(e.target)) {
@@ -316,7 +349,6 @@ function handleSignIn(e) {
   e.preventDefault();
   var emailEl = document.getElementById('signin-email');
   var pwEl    = document.getElementById('signin-password');
-
   var emailOk = Validator.validate(emailEl, 'email',    'signin-email-err',    'signin-email-icon');
   var pwOk    = Validator.validate(pwEl,    'password', 'signin-password-err', null);
   if (!emailOk || !pwOk) return;
@@ -335,9 +367,7 @@ function handleSignIn(e) {
     .catch(function(err) {
       showError('signin-error', 'signin-error-text', err.message || 'Login failed. Check your credentials.');
     })
-    .finally(function() {
-      setButtonLoading('signin-btn', false);
-    });
+    .finally(function() { setButtonLoading('signin-btn', false); });
 }
 
 /* ============================================================
@@ -351,10 +381,10 @@ function handleRegister(e) {
   var pwEl    = document.getElementById('reg-password');
 
   var results = [
-    Validator.validate(nameEl,  'name',     'reg-name-err',      'reg-name-icon'),
-    Validator.validate(emailEl, 'email',    'reg-email-err',     'reg-email-icon'),
-    Validator.validate(phoneEl, 'phone',    'reg-phone-err',     'reg-phone-icon'),
-    Validator.validate(pwEl,    'password', 'reg-password-err',  null),
+    Validator.validate(nameEl,  'name',     'reg-name-err',     'reg-name-icon'),
+    Validator.validate(emailEl, 'email',    'reg-email-err',    'reg-email-icon'),
+    Validator.validate(phoneEl, 'phone',    'reg-phone-err',    'reg-phone-icon'),
+    Validator.validate(pwEl,    'password', 'reg-password-err', null),
   ];
   if (results.some(function(r) { return !r; })) return;
 
@@ -368,15 +398,11 @@ function handleRegister(e) {
       if (otpInput) { otpInput.dataset.email = registeredEmail; otpInput.value = ''; }
       var otpEmailDisplay = document.getElementById('otp-email-display');
       if (otpEmailDisplay) otpEmailDisplay.textContent = registeredEmail;
-      Toast.show('Account created!', 'A verification code was sent to your email.', 'success');
+      Toast.show('Account created! ✉️', 'A 6-digit code was sent to ' + registeredEmail, 'success');
       App.switchAuthTab('otp');
     })
-    .catch(function(err) {
-      showError('register-error', 'register-error-text', err.message || 'Registration failed');
-    })
-    .finally(function() {
-      setButtonLoading('register-btn', false);
-    });
+    .catch(function(err) { showError('register-error', 'register-error-text', err.message || 'Registration failed'); })
+    .finally(function() { setButtonLoading('register-btn', false); });
 }
 
 /* ============================================================
@@ -386,24 +412,16 @@ App.verifyOtp = function() {
   var otpInput = document.getElementById('otp-input');
   var email    = otpInput ? otpInput.dataset.email : '';
   var otp      = otpInput ? otpInput.value.trim()  : '';
-
-  if (!otp || otp.length < 6) {
-    Toast.show('Invalid OTP', 'Please enter the 6-digit OTP', 'error');
-    return;
-  }
+  if (!otp || otp.length < 6) { Toast.show('Invalid code', 'Please enter the 6-digit code from your email.', 'error'); return; }
 
   setButtonLoading('verify-btn', true);
   API.auth.verifyOtp(email, otp)
     .then(function() {
-      Toast.show('Account verified!', 'You can now sign in.', 'success');
+      Toast.show('Account verified! 🎉', 'You can now sign in.', 'success');
       App.switchAuthTab('signin');
     })
-    .catch(function(err) {
-      Toast.show('Verification failed', err.message, 'error');
-    })
-    .finally(function() {
-      setButtonLoading('verify-btn', false);
-    });
+    .catch(function(err) { Toast.show('Verification failed', err.message, 'error'); })
+    .finally(function() { setButtonLoading('verify-btn', false); });
 };
 
 /* ============================================================
@@ -439,19 +457,10 @@ function _launchView() {
    ============================================================ */
 App.logout = function() {
   localStorage.clear();
-  state.token = null;
-  state.user  = null;
-  state.myRequests = [];
+  state.token = null; state.user = null; state.myRequests = [];
   showView('auth-view');
   App.switchAuthTab('signin');
-  ['signin-form', 'register-form'].forEach(function(id) {
-    var f = document.getElementById(id);
-    if (f) f.reset();
-  });
-  ['signin-email','signin-password','reg-name','reg-email','reg-phone','reg-password'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.classList.remove('field-valid', 'field-invalid');
-  });
+  ['signin-form','register-form'].forEach(function(id) { var f = document.getElementById(id); if (f) f.reset(); });
 };
 
 /* ============================================================
@@ -478,31 +487,32 @@ function initCitizenView() {
   var uname  = (state.user && state.user.full_name) || (state.user && state.user.email) || '';
   if (avatar) avatar.textContent = getInitials(uname);
   if (nameEl) nameEl.textContent = uname;
+  // Render gamification from login data immediately
+  renderGamification((state.user && state.user.points) || 0);
   loadCitizenData();
 }
 
 function loadCitizenData() {
-  API.requests.getMy(state.token)
-    .then(function(data) {
-      state.myRequests = data.requests || [];
-    })
-    .catch(function(err) {
-      console.error('[Citizen] load failed:', err.message);
-      state.myRequests = [];
-    })
-    .then(function() {
-      renderCitizenStats();
-      renderCitizenRequests(null);
-    });
+  // Fetch requests and gamification profile in parallel
+  Promise.all([
+    API.requests.getMy(state.token).catch(function() { return { requests: [] }; }),
+    API.user.getProfile(state.token).catch(function() { return { user: null }; }),
+  ]).then(function(results) {
+    state.myRequests = results[0].requests || [];
+    var profile = results[1].user;
+    if (profile) renderGamification(profile.points || 0);
+    renderCitizenStats();
+    renderCitizenRequests(null);
+  });
 }
 
 function renderCitizenStats() {
-  var reqs  = state.myRequests;
-  var grid  = document.getElementById('citizen-stats-grid');
+  var reqs = state.myRequests;
+  var grid = document.getElementById('citizen-stats-grid');
   if (!grid) return;
 
   var stats = [
-    { label: 'Total',       value: reqs.length,                                          emoji: '📋', color: '#6366F1', bg: '#EEF2FF' },
+    { label: 'Total',       value: reqs.length,                                                emoji: '📋', color: '#6366F1', bg: '#EEF2FF' },
     { label: 'Open',        value: reqs.filter(function(r){return r.status==='open';}).length,        emoji: '🔵', color: '#3B82F6', bg: '#EFF6FF' },
     { label: 'In Progress', value: reqs.filter(function(r){return r.status==='in_progress';}).length, emoji: '🟡', color: '#F59E0B', bg: '#FFFBEB' },
     { label: 'Resolved',    value: reqs.filter(function(r){return r.status==='resolved';}).length,    emoji: '✅', color: '#10B981', bg: '#ECFDF5' },
@@ -521,7 +531,6 @@ function renderCitizenRequests(newRefNum) {
   var list  = document.getElementById('citizen-requests-list');
   var count = document.getElementById('citizen-req-count');
   if (!list) return;
-
   var reqs = state.myRequests;
   if (count) count.textContent = reqs.length;
 
@@ -530,7 +539,7 @@ function renderCitizenRequests(newRefNum) {
       '<div class="empty-state">' +
         '<div class="empty-state-icon">📭</div>' +
         '<h3 class="empty-state-title">No requests yet</h3>' +
-        '<p class="empty-state-desc">Submit your first service request to get started. We\'ll track it until it\'s resolved.</p>' +
+        '<p class="empty-state-desc">Submit your first service request to get started.</p>' +
         '<button class="btn btn-primary" onclick="App.openRequestModal()">+ Submit Your First Request</button>' +
       '</div>';
     return;
@@ -539,6 +548,67 @@ function renderCitizenRequests(newRefNum) {
   list.innerHTML = reqs.map(function(req) {
     var meta   = getCategoryMeta(req.category_name || '');
     var isNew  = req.reference_number === newRefNum;
+    var hasImages = req.attachments && req.attachments.length > 0;
+    var hasResp   = req.responses   && req.responses.length  > 0;
+    var myRating  = req.my_rating;
+
+    /* Image thumbnails */
+    var imagesHtml = '';
+    if (hasImages) {
+      imagesHtml = '<div class="req-images-row" aria-label="Attached photos">';
+      req.attachments.forEach(function(att, idx) {
+        var url  = att.file_url || att.url || '';
+        var name = escapeHtml(att.file_name || ('Image ' + (idx + 1)));
+        imagesHtml += '<button type="button" class="req-img-thumb" ' +
+          'onclick="event.stopPropagation();App.openCitizenLightbox(' + JSON.stringify(req.attachments) + ',' + idx + ')" ' +
+          'aria-label="View ' + name + '">' +
+          '<img src="' + escapeHtml(url) + '" alt="' + name + '" loading="lazy">' +
+        '</button>';
+      });
+      imagesHtml += '</div>';
+    }
+
+    /* Admin responses */
+    var responsesHtml = '';
+    if (hasResp) {
+      responsesHtml = '<div class="req-responses">';
+      req.responses.forEach(function(resp) {
+        responsesHtml +=
+          '<div class="req-response-card">' +
+            '<div class="req-response-header">' +
+              '<span class="req-response-badge">Official Response</span>' +
+              '<span class="req-response-by">' + escapeHtml(resp.admin_name || 'Admin') + '</span>' +
+              '<span class="req-response-date">' + formatDate(resp.created_at) + '</span>' +
+            '</div>' +
+            '<p class="req-response-msg">' + escapeHtml(resp.message) + '</p>' +
+          '</div>';
+      });
+      responsesHtml += '</div>';
+    }
+
+    /* Rating section */
+    var ratingHtml = '';
+    if (req.status === 'resolved' || req.status === 'rejected') {
+      if (myRating) {
+        var stars = '';
+        for (var s = 1; s <= 5; s++) {
+          stars += '<span class="star-display ' + (s <= myRating.rating ? 'filled' : '') + '">★</span>';
+        }
+        ratingHtml = '<div class="req-rating-done">' +
+          '<span class="req-rating-label">Your rating:</span>' +
+          '<span class="stars-display">' + stars + '</span>' +
+          (myRating.feedback ? '<span class="req-rating-fb">"' + escapeHtml(myRating.feedback) + '"</span>' : '') +
+          '<button class="btn-rate-update" onclick="event.stopPropagation();App.openRatingModal(' + req.id + ',' + myRating.rating + ')" aria-label="Update rating">Edit</button>' +
+        '</div>';
+      } else {
+        ratingHtml = '<div class="req-rating-cta">' +
+          '<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();App.openRatingModal(' + req.id + ', 0)" aria-label="Rate this request">' +
+            '⭐ Rate this response — earn +5 pts' +
+          '</button>' +
+        '</div>';
+      }
+    }
+
     return '<div class="request-card' + (isNew ? ' highlight' : '') + '"' +
       ' tabindex="0" role="button"' +
       ' aria-label="Request: ' + escapeHtml(req.title) + ', Status: ' + (req.status || 'open') + '"' +
@@ -553,13 +623,18 @@ function renderCitizenRequests(newRefNum) {
             '<span>📎 ' + escapeHtml(req.reference_number || '—') + '</span>' +
             '<span>📅 ' + formatDate(req.created_at) + '</span>' +
             (req.location_address ? '<span>📍 ' + escapeHtml(req.location_address) + '</span>' : '') +
+            (hasImages ? '<span>🖼️ ' + req.attachments.length + ' photo' + (req.attachments.length > 1 ? 's' : '') + '</span>' : '') +
+            (hasResp   ? '<span class="resp-indicator">💬 ' + req.responses.length + ' response' + (req.responses.length > 1 ? 's' : '') + '</span>' : '') +
           '</div>' +
         '</div>' +
         '<svg class="req-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>' +
       '</div>' +
       '<div class="req-card-body hidden">' +
-        '<p>' + escapeHtml(req.description || 'No description provided.') + '</p>' +
-        (req.category_name ? '<p style="margin-top:8px;font-size:.8rem;color:var(--text-muted)">Category: ' + escapeHtml(req.category_name) + '</p>' : '') +
+        '<div class="req-desc-text">' + escapeHtml(req.description || 'No description provided.') + '</div>' +
+        (req.category_name ? '<p class="req-cat-label">Category: ' + escapeHtml(req.category_name) + '</p>' : '') +
+        imagesHtml +
+        responsesHtml +
+        ratingHtml +
       '</div>' +
     '</div>';
   }).join('');
@@ -571,6 +646,68 @@ App.toggleRequestCard = function(card) {
   var expanded = !body.classList.contains('hidden');
   body.classList.toggle('hidden', expanded);
   card.classList.toggle('expanded', !expanded);
+};
+
+/* Open lightbox from citizen card (receives array + index) */
+App.openCitizenLightbox = function(attachments, index) {
+  state.lightboxAttachments = attachments;
+  App.openLightbox(index);
+};
+
+/* ============================================================
+   RATING MODAL
+   ============================================================ */
+App.openRatingModal = function(requestId, existingRating) {
+  state.ratingRequestId = requestId;
+  state.ratingValue     = existingRating || 0;
+
+  document.getElementById('rating-request-id').value = requestId;
+  document.getElementById('rating-feedback').value   = '';
+
+  // Reset + set stars
+  App.setRatingStar(existingRating || 0);
+
+  var modal = document.getElementById('rating-modal');
+  if (modal) modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+};
+
+App.closeRatingModal = function() {
+  var modal = document.getElementById('rating-modal');
+  if (modal) modal.classList.add('hidden');
+  document.body.style.overflow = '';
+  state.ratingValue = 0;
+};
+
+App.setRatingStar = function(val) {
+  state.ratingValue = val;
+  var stars = document.querySelectorAll('#star-rating .star');
+  var labels = ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+  stars.forEach(function(star) {
+    var starVal = parseInt(star.dataset.val, 10);
+    star.classList.toggle('active', starVal <= val);
+  });
+  var label = document.getElementById('rating-selected-label');
+  if (label) label.textContent = val > 0 ? labels[val] + ' (' + val + '/5)' : 'Tap a star to rate';
+};
+
+App.submitRating = function() {
+  var reqId    = state.ratingRequestId;
+  var rating   = state.ratingValue;
+  var feedback = (document.getElementById('rating-feedback') || {}).value || '';
+
+  if (!rating || rating < 1) { Toast.show('Please select a rating', 'Tap on one of the stars first.', 'warning'); return; }
+
+  setButtonLoading('submit-rating-btn', true);
+  API.requests.rate(reqId, rating, feedback, state.token)
+    .then(function() {
+      Toast.show('Thank you! ⭐', 'Your feedback earns you +5 civic points.', 'success');
+      App.closeRatingModal();
+      // Refresh citizen data to update rating display
+      loadCitizenData();
+    })
+    .catch(function(err) { Toast.show('Rating failed', err.message, 'error'); })
+    .finally(function() { setButtonLoading('submit-rating-btn', false); });
 };
 
 /* ============================================================
@@ -628,16 +765,16 @@ function renderAdminStats() {
 
 /* ---- Filter & Sort ---- */
 App.adminFilter = function() {
-  state.adminSearch         = ((document.getElementById('admin-search')?.value)         || '').toLowerCase();
-  state.adminStatusFilter   = (document.getElementById('admin-status-filter')?.value)   || '';
-  state.adminCategoryFilter = (document.getElementById('admin-category-filter')?.value) || '';
+  state.adminSearch         = ((document.getElementById('admin-search') || {}).value || '').toLowerCase();
+  state.adminStatusFilter   = ((document.getElementById('admin-status-filter')   || {}).value || '');
+  state.adminCategoryFilter = ((document.getElementById('admin-category-filter') || {}).value || '');
   state.adminPage = 1;
 
   state.adminFiltered = state.adminRequests.filter(function(req) {
-    var matchSearch = !state.adminSearch ||
-      (req.title             || '').toLowerCase().indexOf(state.adminSearch) > -1 ||
-      (req.citizen_name      || '').toLowerCase().indexOf(state.adminSearch) > -1 ||
-      (req.reference_number  || '').toLowerCase().indexOf(state.adminSearch) > -1;
+    var matchSearch   = !state.adminSearch ||
+      (req.title            || '').toLowerCase().indexOf(state.adminSearch) > -1 ||
+      (req.citizen_name     || '').toLowerCase().indexOf(state.adminSearch) > -1 ||
+      (req.reference_number || '').toLowerCase().indexOf(state.adminSearch) > -1;
     var matchStatus   = !state.adminStatusFilter   || req.status === state.adminStatusFilter;
     var matchCategory = !state.adminCategoryFilter || String(req.category_id) === state.adminCategoryFilter;
     return matchSearch && matchStatus && matchCategory;
@@ -648,12 +785,8 @@ App.adminFilter = function() {
 };
 
 App.adminSort = function(col) {
-  if (state.adminSortCol === col) {
-    state.adminSortDir = state.adminSortDir === 'asc' ? 'desc' : 'asc';
-  } else {
-    state.adminSortCol = col;
-    state.adminSortDir = 'asc';
-  }
+  if (state.adminSortCol === col) { state.adminSortDir = state.adminSortDir === 'asc' ? 'desc' : 'asc'; }
+  else { state.adminSortCol = col; state.adminSortDir = 'asc'; }
   state.adminPage = 1;
   applyAdminSort();
   renderAdminTable();
@@ -664,16 +797,15 @@ function applyAdminSort() {
   var col = state.adminSortCol;
   var dir = state.adminSortDir === 'asc' ? 1 : -1;
   state.adminFiltered.sort(function(a, b) {
-    var av = a[col] || '';
-    var bv = b[col] || '';
+    var av = a[col] || '', bv = b[col] || '';
     return av < bv ? -dir : av > bv ? dir : 0;
   });
 }
 
 function updateSortIndicators() {
   document.querySelectorAll('.requests-table th[data-col]').forEach(function(th) {
-    th.classList.remove('sort-asc', 'sort-desc');
-    th.setAttribute('aria-sort', 'none');
+    th.classList.remove('sort-asc','sort-desc');
+    th.setAttribute('aria-sort','none');
     var ind = th.querySelector('.sort-indicator');
     if (ind) ind.textContent = '↕';
   });
@@ -690,7 +822,6 @@ function renderAdminTable() {
   var tbody = document.getElementById('admin-tbody');
   var count = document.getElementById('admin-req-count');
   if (!tbody) return;
-
   var total = state.adminFiltered.length;
   if (count) count.textContent = total;
 
@@ -709,8 +840,7 @@ function renderAdminTable() {
     return '<tr class="' + (selected ? 'selected' : '') + '"' +
       ' onclick="App.openSidePanel(' + req.id + ')"' +
       ' data-id="' + req.id + '"' +
-      ' tabindex="0" role="row"' +
-      ' aria-selected="' + selected + '"' +
+      ' tabindex="0" role="row" aria-selected="' + selected + '"' +
       ' onkeydown="if(event.key===\'Enter\')App.openSidePanel(' + req.id + ')">' +
       '<td class="td-mono">' + escapeHtml(req.reference_number || '—') + '</td>' +
       '<td>' +
@@ -718,19 +848,18 @@ function renderAdminTable() {
         (req.citizen_email ? '<div class="citizen-email">' + escapeHtml(req.citizen_email) + '</div>' : '') +
       '</td>' +
       '<td><span style="display:inline-flex;align-items:center;gap:5px">' +
-        '<span aria-hidden="true">' + meta.emoji + '</span>' +
-        escapeHtml(req.category_name || '—') +
+        '<span aria-hidden="true">' + meta.emoji + '</span>' + escapeHtml(req.category_name || '—') +
       '</span></td>' +
       '<td class="truncate" style="max-width:200px">' + escapeHtml(req.title || '—') + '</td>' +
       '<td>' +
-        '<select class="status-select status-' + (req.status || 'open') + '"' +
+        '<select class="status-select status-' + (req.status||'open') + '"' +
           ' aria-label="Update status"' +
           ' onchange="App.updateStatus(' + req.id + ', this.value, this)"' +
           ' onclick="event.stopPropagation()">' +
-          '<option value="open"'        + (req.status === 'open'        ? ' selected' : '') + '>Open</option>' +
-          '<option value="in_progress"' + (req.status === 'in_progress' ? ' selected' : '') + '>In Progress</option>' +
-          '<option value="resolved"'    + (req.status === 'resolved'    ? ' selected' : '') + '>Resolved</option>' +
-          '<option value="rejected"'    + (req.status === 'rejected'    ? ' selected' : '') + '>Rejected</option>' +
+          '<option value="open"'        + (req.status==='open'        ? ' selected':'') + '>Open</option>' +
+          '<option value="in_progress"' + (req.status==='in_progress' ? ' selected':'') + '>In Progress</option>' +
+          '<option value="resolved"'    + (req.status==='resolved'    ? ' selected':'') + '>Resolved</option>' +
+          '<option value="rejected"'    + (req.status==='rejected'    ? ' selected':'') + '>Rejected</option>' +
         '</select>' +
       '</td>' +
       '<td>' + priorityBadge(req.priority) + '</td>' +
@@ -744,27 +873,22 @@ function renderAdminTable() {
 function renderPagination(total) {
   var paginationEl = document.getElementById('admin-pagination');
   if (!paginationEl) return;
-
   var pages = Math.ceil(total / state.adminPageSize);
   if (pages <= 1) { paginationEl.innerHTML = ''; return; }
 
   var start = (state.adminPage - 1) * state.adminPageSize + 1;
   var end   = Math.min(state.adminPage * state.adminPageSize, total);
-
-  var btns = '<button class="page-btn" onclick="App.adminChangePage(' + (state.adminPage - 1) + ')"' +
+  var btns  = '<button class="page-btn" onclick="App.adminChangePage(' + (state.adminPage - 1) + ')"' +
     (state.adminPage === 1 ? ' disabled' : '') + ' aria-label="Previous page">‹</button>';
 
   for (var p = 1; p <= pages; p++) {
     if (p === 1 || p === pages || Math.abs(p - state.adminPage) <= 1) {
       btns += '<button class="page-btn' + (p === state.adminPage ? ' active' : '') + '"' +
-        ' onclick="App.adminChangePage(' + p + ')"' +
-        ' aria-label="Page ' + p + '"' +
-        (p === state.adminPage ? ' aria-current="page"' : '') + '>' + p + '</button>';
+        ' onclick="App.adminChangePage(' + p + ')" aria-label="Page ' + p + '">' + p + '</button>';
     } else if (Math.abs(p - state.adminPage) === 2) {
-      btns += '<span class="page-btn" style="cursor:default;color:var(--text-muted)" aria-hidden="true">…</span>';
+      btns += '<span class="page-btn" style="cursor:default;color:var(--text-muted)">…</span>';
     }
   }
-
   btns += '<button class="page-btn" onclick="App.adminChangePage(' + (state.adminPage + 1) + ')"' +
     (state.adminPage === pages ? ' disabled' : '') + ' aria-label="Next page">›</button>';
 
@@ -787,23 +911,18 @@ App.updateStatus = function(id, newStatus, selectEl) {
   selectEl.className = 'status-select status-' + newStatus;
   API.admin.updateStatus(id, newStatus, state.token)
     .then(function() {
-      var req = state.adminRequests.find(function(r) { return r.id === id; });
-      if (req) req.status = newStatus;
-      var reqF = state.adminFiltered.find(function(r) { return r.id === id; });
+      var req  = state.adminRequests.find(function(r) { return r.id === id; });
+      var reqF = state.adminFiltered.find(function(r)  { return r.id === id; });
+      if (req)  req.status  = newStatus;
       if (reqF) reqF.status = newStatus;
       renderAdminStats();
       Toast.show('Status updated', 'Moved to "' + (STATUS_LABELS[newStatus] || newStatus) + '"', 'success');
-      // Sync panel status elements without full re-render
       if (state.selectedRequestId === id) {
         var panelSel = document.getElementById('panel-status-select');
         if (panelSel) { panelSel.value = newStatus; panelSel.className = 'status-select status-' + newStatus; }
-        var panelBadge = document.getElementById('panel-status-badge');
-        if (panelBadge) panelBadge.outerHTML = '<span id="panel-status-badge">' + statusBadge(newStatus) + '</span>';
       }
     })
-    .catch(function(err) {
-      Toast.show('Update failed', err.message, 'error');
-    });
+    .catch(function(err) { Toast.show('Update failed', err.message, 'error'); });
 };
 
 /* ---- Priority update ---- */
@@ -811,38 +930,48 @@ App.updatePriority = function(id, newPriority, selectEl) {
   selectEl.className = 'priority-select priority-' + newPriority;
   API.admin.updatePriority(id, newPriority, state.token)
     .then(function() {
-      var req = state.adminRequests.find(function(r) { return r.id === id; });
-      if (req) req.priority = newPriority;
-      var reqF = state.adminFiltered.find(function(r) { return r.id === id; });
+      var req  = state.adminRequests.find(function(r) { return r.id === id; });
+      var reqF = state.adminFiltered.find(function(r)  { return r.id === id; });
+      if (req)  req.priority  = newPriority;
       if (reqF) reqF.priority = newPriority;
       renderAdminTable();
       Toast.show('Priority updated', 'Changed to "' + newPriority.charAt(0).toUpperCase() + newPriority.slice(1) + '"', 'success');
     })
-    .catch(function(err) {
-      Toast.show('Update failed', err.message, 'error');
-    });
+    .catch(function(err) { Toast.show('Update failed', err.message, 'error'); });
 };
 
-/* ---- Admin note ---- */
+/* ---- Admin private note ---- */
 App.saveAdminNote = function(id) {
   var textarea = document.getElementById('panel-note');
-  var note = textarea ? textarea.value.trim() : '';
-  if (!note) {
-    Toast.show('Note is empty', 'Write a note or comment before saving.', 'warning');
-    return;
-  }
+  var note     = textarea ? textarea.value.trim() : '';
+  if (!note) { Toast.show('Note is empty', 'Write a note before saving.', 'warning'); return; }
+
   setButtonLoading('save-note-btn', true);
   API.admin.addNote(id, note, state.token)
     .then(function() {
-      Toast.show('Note saved', 'Admin note added to this case.', 'success');
+      Toast.show('Note saved', 'Internal note added to this case.', 'success');
       if (textarea) textarea.value = '';
+      App.refreshPanel();
     })
-    .catch(function(err) {
-      Toast.show('Save failed', err.message || 'Could not save note.', 'error');
+    .catch(function(err) { Toast.show('Save failed', err.message || 'Could not save note.', 'error'); })
+    .finally(function() { setButtonLoading('save-note-btn', false); });
+};
+
+/* ---- Admin public response ---- */
+App.sendAdminResponse = function(id) {
+  var textarea = document.getElementById('panel-response');
+  var message  = textarea ? textarea.value.trim() : '';
+  if (!message) { Toast.show('Response is empty', 'Write a response message before sending.', 'warning'); return; }
+
+  setButtonLoading('send-response-btn', true);
+  API.admin.addResponse(id, message, state.token)
+    .then(function() {
+      Toast.show('Response sent! ✉️', 'Citizen has been notified by email.', 'success');
+      if (textarea) textarea.value = '';
+      App.refreshPanel();
     })
-    .finally(function() {
-      setButtonLoading('save-note-btn', false);
-    });
+    .catch(function(err) { Toast.show('Failed to send', err.message || 'Could not send response.', 'error'); })
+    .finally(function() { setButtonLoading('send-response-btn', false); });
 };
 
 /* ---- Side panel ---- */
@@ -861,7 +990,6 @@ App.openSidePanel = function(id) {
   panel.classList.remove('hidden');
   if (panelRef) panelRef.textContent = cached.reference_number || 'Request Details';
   if (subtitle) subtitle.textContent = cached.title || '';
-
   body.innerHTML = _panelSkeleton();
 
   document.querySelectorAll('#admin-tbody tr').forEach(function(tr) {
@@ -869,13 +997,8 @@ App.openSidePanel = function(id) {
   });
 
   API.admin.getRequestDetail(id, state.token)
-    .then(function(data) {
-      var full = Object.assign({}, cached, data.request || data);
-      _renderPanelContent(body, full);
-    })
-    .catch(function() {
-      _renderPanelContent(body, cached);
-    });
+    .then(function(data) { _renderPanelContent(body, Object.assign({}, cached, data.request || data)); })
+    .catch(function()    { _renderPanelContent(body, cached); });
 };
 
 App.refreshPanel = function() {
@@ -883,13 +1006,11 @@ App.refreshPanel = function() {
 };
 
 App.closeSidePanel = function() {
-  state.selectedRequestId    = null;
-  state.lightboxAttachments  = [];
+  state.selectedRequestId   = null;
+  state.lightboxAttachments = [];
   var panel = document.getElementById('admin-side-panel');
   if (panel) panel.classList.add('hidden');
-  document.querySelectorAll('#admin-tbody tr').forEach(function(tr) {
-    tr.classList.remove('selected');
-  });
+  document.querySelectorAll('#admin-tbody tr').forEach(function(tr) { tr.classList.remove('selected'); });
 };
 
 /* ---- Panel helpers ---- */
@@ -902,16 +1023,7 @@ function _panelSkeleton() {
   '<div class="panel-section">' +
     '<div class="skeleton skel-text" style="width:40%;margin-bottom:14px"></div>' +
     '<div class="skeleton skel-text" style="width:100%;margin-bottom:8px"></div>' +
-    '<div class="skeleton skel-text" style="width:100%;margin-bottom:8px"></div>' +
     '<div class="skeleton skel-text" style="width:75%"></div>' +
-  '</div>' +
-  '<div class="panel-section">' +
-    '<div class="skeleton skel-text" style="width:35%;margin-bottom:14px"></div>' +
-    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">' +
-      '<div class="skeleton" style="aspect-ratio:1;border-radius:8px"></div>' +
-      '<div class="skeleton" style="aspect-ratio:1;border-radius:8px"></div>' +
-      '<div class="skeleton" style="aspect-ratio:1;border-radius:8px"></div>' +
-    '</div>' +
   '</div>';
 }
 
@@ -928,11 +1040,13 @@ function _renderPanelContent(container, req) {
   var meta        = getCategoryMeta(req.category_name || '');
   var attachments = req.attachments || [];
   var timeline    = req.timeline    || [];
+  var responses   = req.responses   || [];
+  var rating      = req.rating;
   state.lightboxAttachments = attachments;
 
   var html = '';
 
-  /* ---- Section 1: Case header ---- */
+  /* Section 1: Case header */
   html += '<div class="panel-section">' +
     '<div class="panel-case-header">' +
       '<span class="panel-ref-chip">' + escapeHtml(req.reference_number || '—') + '</span>' +
@@ -944,7 +1058,7 @@ function _renderPanelContent(container, req) {
     '</div>' +
   '</div>';
 
-  /* ---- Section 2: Issue details ---- */
+  /* Section 2: Issue details */
   html += '<div class="panel-section">' +
     '<div class="panel-section-title">Issue Details</div>' +
     '<div class="panel-info-grid">' +
@@ -954,13 +1068,13 @@ function _renderPanelContent(container, req) {
     '</div>' +
   '</div>';
 
-  /* ---- Section 3: Full description ---- */
+  /* Section 3: Description */
   html += '<div class="panel-section">' +
     '<div class="panel-section-title">Description</div>' +
     '<div class="panel-desc-full">' + escapeHtml(req.description || 'No description provided.') + '</div>' +
   '</div>';
 
-  /* ---- Section 4: Citizen info ---- */
+  /* Section 4: Citizen info */
   html += '<div class="panel-section">' +
     '<div class="panel-section-title">Citizen</div>' +
     '<div class="panel-info-grid">' +
@@ -970,22 +1084,20 @@ function _renderPanelContent(container, req) {
     '</div>' +
   '</div>';
 
-  /* ---- Section 5: Attachments ---- */
-  var attachCount = attachments.length;
+  /* Section 5: Attachments */
   html += '<div class="panel-section">' +
     '<div class="panel-section-title">Attachments' +
-      (attachCount ? ' <span class="attach-count">' + attachCount + '</span>' : '') +
+      (attachments.length ? ' <span class="attach-count">' + attachments.length + '</span>' : '') +
     '</div>' +
     '<div class="attachment-gallery">';
 
-  if (attachCount === 0) {
-    html += '<div class="attach-no-images">📷 No images attached to this request</div>';
+  if (!attachments.length) {
+    html += '<div class="attach-no-images">📷 No images attached</div>';
   } else {
     attachments.forEach(function(att, idx) {
       var url  = att.file_url || att.url || String(att);
       var name = escapeHtml(att.file_name || att.name || ('Image ' + (idx + 1)));
-      html += '<div class="attach-thumb" role="button" tabindex="0"' +
-        ' aria-label="View ' + name + '"' +
+      html += '<div class="attach-thumb" role="button" tabindex="0" aria-label="View ' + name + '"' +
         ' onclick="App.openLightbox(' + idx + ')"' +
         ' onkeydown="if(event.key===\'Enter\'||event.key===\' \')App.openLightbox(' + idx + ')">' +
         '<img src="' + escapeHtml(url) + '" alt="' + name + '" loading="lazy">' +
@@ -995,14 +1107,47 @@ function _renderPanelContent(container, req) {
   }
   html += '</div></div>';
 
-  /* ---- Section 6: Activity timeline ---- */
+  /* Section 6: Admin responses posted */
+  if (responses.length) {
+    html += '<div class="panel-section">' +
+      '<div class="panel-section-title">Responses Posted <span class="attach-count">' + responses.length + '</span></div>';
+    responses.forEach(function(r) {
+      html += '<div class="panel-response-item">' +
+        '<div class="panel-response-meta">' +
+          '<span class="panel-response-admin">' + escapeHtml(r.admin_name || 'Admin') + '</span>' +
+          '<span class="panel-response-date">' + formatDateTime(r.created_at) + '</span>' +
+          '<span class="panel-response-vis">' + (r.is_public ? '👁️ Citizen visible' : '🔒 Internal') + '</span>' +
+        '</div>' +
+        '<p class="panel-response-msg">' + escapeHtml(r.message) + '</p>' +
+      '</div>';
+    });
+    html += '</div>';
+  }
+
+  /* Section 7: Citizen rating */
+  if (rating) {
+    var starsHtml = '';
+    for (var s = 1; s <= 5; s++) {
+      starsHtml += '<span class="star-display ' + (s <= rating.rating ? 'filled' : '') + '">★</span>';
+    }
+    html += '<div class="panel-section">' +
+      '<div class="panel-section-title">Citizen Rating</div>' +
+      '<div class="panel-rating-row">' +
+        '<span class="stars-display">' + starsHtml + '</span>' +
+        '<span class="panel-rating-val">' + rating.rating + '/5</span>' +
+      '</div>' +
+      (rating.feedback ? '<div class="panel-rating-feedback">"' + escapeHtml(rating.feedback) + '"</div>' : '') +
+    '</div>';
+  }
+
+  /* Section 8: Activity timeline */
   if (timeline.length) {
     html += '<div class="panel-section">' +
       '<div class="panel-section-title">Activity</div>' +
       '<div class="timeline">';
     timeline.forEach(function(item) {
       var dotClass = 'timeline-dot';
-      if (item.new_status === 'resolved')    dotClass += ' dot-resolved';
+      if (item.new_status === 'resolved') dotClass += ' dot-resolved';
       else if (item.new_status === 'rejected') dotClass += ' dot-rejected';
       else if (item.new_status === 'open')     dotClass += ' dot-open';
       else if (!item.new_status)               dotClass += ' dot-created';
@@ -1011,8 +1156,8 @@ function _renderPanelContent(container, req) {
         '<div class="timeline-content">' +
           '<div class="timeline-action">' + escapeHtml(item.action || 'Update') + '</div>' +
           '<div class="timeline-meta">' +
-            (item.actor_name ? escapeHtml(item.actor_name) + ' · ' : '') +
-            formatDate(item.created_at) +
+            (item.actor_name ? escapeHtml(item.actor_name) + ' · ' : '') + formatDate(item.created_at) +
+            (item.is_public === 0 ? ' · <span class="timeline-private">Internal</span>' : '') +
           '</div>' +
           (item.comment ? '<div class="timeline-note">"' + escapeHtml(item.comment) + '"</div>' : '') +
         '</div>' +
@@ -1021,45 +1166,63 @@ function _renderPanelContent(container, req) {
     html += '</div></div>';
   }
 
-  /* ---- Section 7: Admin actions ---- */
+  /* Section 9: Admin Actions */
   html += '<div class="panel-section">' +
     '<div class="panel-section-title">Admin Actions</div>' +
     '<div class="admin-action-card">' +
 
       '<div class="admin-action-row">' +
         '<div class="select-wrap">' +
-          '<select id="panel-status-select" class="status-select status-' + (req.status || 'open') + '"' +
+          '<select id="panel-status-select" class="status-select status-' + (req.status||'open') + '"' +
             ' aria-label="Update status" onchange="App.updateStatus(' + req.id + ', this.value, this)">' +
-            '<option value="open"'        + (req.status === 'open'        ? ' selected' : '') + '>Open</option>' +
-            '<option value="in_progress"' + (req.status === 'in_progress' ? ' selected' : '') + '>In Progress</option>' +
-            '<option value="resolved"'    + (req.status === 'resolved'    ? ' selected' : '') + '>Resolved</option>' +
-            '<option value="rejected"'    + (req.status === 'rejected'    ? ' selected' : '') + '>Rejected</option>' +
+            '<option value="open"'        + (req.status==='open'        ?' selected':'') + '>Open</option>' +
+            '<option value="in_progress"' + (req.status==='in_progress' ?' selected':'') + '>In Progress</option>' +
+            '<option value="resolved"'    + (req.status==='resolved'    ?' selected':'') + '>Resolved</option>' +
+            '<option value="rejected"'    + (req.status==='rejected'    ?' selected':'') + '>Rejected</option>' +
           '</select>' +
         '</div>' +
         '<div class="select-wrap">' +
-          '<select id="panel-priority-select" class="priority-select priority-' + (req.priority || 'medium') + '"' +
+          '<select id="panel-priority-select" class="priority-select priority-' + (req.priority||'medium') + '"' +
             ' aria-label="Update priority" onchange="App.updatePriority(' + req.id + ', this.value, this)">' +
-            '<option value="low"'    + (req.priority === 'low'    ? ' selected' : '') + '>Low</option>' +
-            '<option value="medium"' + (req.priority === 'medium' ? ' selected' : '') + '>Medium</option>' +
-            '<option value="high"'   + (req.priority === 'high'   ? ' selected' : '') + '>High</option>' +
-            '<option value="urgent"' + (req.priority === 'urgent' ? ' selected' : '') + '>Urgent</option>' +
+            '<option value="low"'    + (req.priority==='low'    ?' selected':'') + '>Low</option>' +
+            '<option value="medium"' + (req.priority==='medium' ?' selected':'') + '>Medium</option>' +
+            '<option value="high"'   + (req.priority==='high'   ?' selected':'') + '>High</option>' +
+            '<option value="urgent"' + (req.priority==='urgent' ?' selected':'') + '>Urgent</option>' +
           '</select>' +
         '</div>' +
       '</div>' +
 
-      '<div>' +
-        '<label for="panel-note" class="panel-note-label">Admin Note / Resolution Comment</label>' +
-        '<textarea id="panel-note" class="panel-note-textarea"' +
-          ' placeholder="Add a resolution note, internal comment, or next steps…"' +
-          ' aria-label="Admin note"></textarea>' +
+      /* Public response to citizen */
+      '<div class="panel-action-block">' +
+        '<label for="panel-response" class="panel-note-label">' +
+          '💬 Public Response <span class="panel-action-sub">(visible to citizen, sends email notification)</span>' +
+        '</label>' +
+        '<textarea id="panel-response" class="panel-note-textarea"' +
+          ' placeholder="Write an official response that the citizen will see on their dashboard…"' +
+          ' aria-label="Public response to citizen"></textarea>' +
+        '<button class="btn btn-primary btn-full" id="send-response-btn"' +
+          ' onclick="App.sendAdminResponse(' + req.id + ')">' +
+          '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>' +
+          '<span class="btn-text">Send Response to Citizen</span>' +
+          '<span class="btn-spinner hidden" aria-hidden="true"></span>' +
+        '</button>' +
       '</div>' +
 
-      '<button class="btn btn-primary btn-full" id="save-note-btn"' +
-        ' onclick="App.saveAdminNote(' + req.id + ')">' +
-        '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true" style="flex-shrink:0"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>' +
-        '<span class="btn-text">Save Note</span>' +
-        '<span class="btn-spinner hidden" aria-hidden="true"></span>' +
-      '</button>' +
+      /* Private internal note */
+      '<div class="panel-action-block">' +
+        '<label for="panel-note" class="panel-note-label">' +
+          '🔒 Internal Note <span class="panel-action-sub">(not visible to citizen)</span>' +
+        '</label>' +
+        '<textarea id="panel-note" class="panel-note-textarea"' +
+          ' placeholder="Add an internal note for your team…"' +
+          ' aria-label="Internal admin note"></textarea>' +
+        '<button class="btn btn-secondary btn-full" id="save-note-btn"' +
+          ' onclick="App.saveAdminNote(' + req.id + ')">' +
+          '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>' +
+          '<span class="btn-text">Save Note</span>' +
+          '<span class="btn-spinner hidden" aria-hidden="true"></span>' +
+        '</button>' +
+      '</div>' +
 
     '</div>' +
   '</div>';
@@ -1073,36 +1236,31 @@ function _renderPanelContent(container, req) {
 App.openLightbox = function(index) {
   var attachments = state.lightboxAttachments;
   if (!attachments || !attachments.length) return;
-
   state.lightboxIndex = index;
-  var att  = attachments[index];
-  var url  = att.file_url || att.url || String(att);
-  var name = att.file_name || att.name || ('Image ' + (index + 1));
-
-  var lightbox = document.getElementById('lightbox');
-  var img      = document.getElementById('lightbox-img');
-  var caption  = document.getElementById('lightbox-caption');
-  var counter  = document.getElementById('lightbox-counter');
-  var prevBtn  = document.getElementById('lightbox-prev');
-  var nextBtn  = document.getElementById('lightbox-next');
-  if (!lightbox || !img) return;
-
-  img.src = url;
-  img.alt = name;
+  var att    = attachments[index];
+  var url    = att.file_url || att.url || String(att);
+  var name   = att.file_name || att.name || ('Image ' + (index + 1));
+  var lb     = document.getElementById('lightbox');
+  var img    = document.getElementById('lightbox-img');
+  var caption = document.getElementById('lightbox-caption');
+  var counter = document.getElementById('lightbox-counter');
+  var prevBtn = document.getElementById('lightbox-prev');
+  var nextBtn = document.getElementById('lightbox-next');
+  if (!lb || !img) return;
+  img.src = url; img.alt = name;
   if (caption) caption.textContent = name;
   if (counter) counter.textContent = (index + 1) + ' / ' + attachments.length;
   if (prevBtn) prevBtn.disabled = index === 0;
   if (nextBtn) nextBtn.disabled = index === attachments.length - 1;
-
-  lightbox.classList.remove('hidden');
+  lb.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
   var closeBtn = document.getElementById('lightbox-close-btn');
   if (closeBtn) closeBtn.focus();
 };
 
 App.closeLightbox = function() {
-  var lightbox = document.getElementById('lightbox');
-  if (lightbox) lightbox.classList.add('hidden');
+  var lb = document.getElementById('lightbox');
+  if (lb) lb.classList.add('hidden');
   document.body.style.overflow = '';
 };
 
@@ -1116,12 +1274,11 @@ App.lightboxNext = function() {
 };
 
 function populateAdminCategoryFilter() {
-  var sel  = document.getElementById('admin-category-filter');
+  var sel = document.getElementById('admin-category-filter');
   if (!sel) return;
   (state.categories || []).forEach(function(c) {
     var opt = document.createElement('option');
-    opt.value       = c.id;
-    opt.textContent = c.name;
+    opt.value = c.id; opt.textContent = c.name;
     sel.appendChild(opt);
   });
 }
@@ -1130,33 +1287,21 @@ function populateAdminCategoryFilter() {
    REQUEST MODAL
    ============================================================ */
 App.openRequestModal = function() {
-  state.form = {
-    step: 1, categoryId: null, categoryName: '',
-    title: '', description: '', location: '',
-    priority: 'medium', photos: [],
-  };
-
-  renderStep(1);
-  updateModalProgress(1);
-  renderCategoryGrid();
-
+  state.form = { step: 1, categoryId: null, categoryName: '', title: '', description: '', location: '', priority: 'medium', photos: [] };
+  renderStep(1); updateModalProgress(1); renderCategoryGrid();
   ['req-title','req-description','req-location'].forEach(function(id) {
     var el = document.getElementById(id);
-    if (el) { el.value = ''; el.classList.remove('field-invalid', 'field-valid'); }
+    if (el) { el.value = ''; el.classList.remove('field-invalid','field-valid'); }
   });
-  document.querySelectorAll('input[name="req-priority"]').forEach(function(r) {
-    r.checked = r.value === 'medium';
-  });
+  document.querySelectorAll('input[name="req-priority"]').forEach(function(r) { r.checked = r.value === 'medium'; });
   var previews = document.getElementById('photo-previews');
   if (previews) previews.innerHTML = '';
   var photoInput = document.getElementById('photo-input');
   if (photoInput) photoInput.value = '';
   state.form.photos = [];
-
   var modal = document.getElementById('request-modal');
   if (modal) modal.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
-
   setTimeout(function() {
     var first = modal && (modal.querySelector('.category-tile') || modal.querySelector('input, button'));
     if (first) first.focus();
@@ -1171,26 +1316,18 @@ App.closeRequestModal = function() {
 
 document.addEventListener('DOMContentLoaded', function() {
   var modalOverlay = document.getElementById('request-modal');
-  if (modalOverlay) {
-    modalOverlay.addEventListener('click', function(e) {
-      if (e.target === modalOverlay) App.closeRequestModal();
-    });
-  }
+  if (modalOverlay) modalOverlay.addEventListener('click', function(e) { if (e.target === modalOverlay) App.closeRequestModal(); });
   var lightbox = document.getElementById('lightbox');
-  if (lightbox) {
-    lightbox.addEventListener('click', function(e) {
-      if (e.target === lightbox) App.closeLightbox();
-    });
-  }
+  if (lightbox) lightbox.addEventListener('click', function(e) { if (e.target === lightbox) App.closeLightbox(); });
+  var ratingModal = document.getElementById('rating-modal');
+  if (ratingModal) ratingModal.addEventListener('click', function(e) { if (e.target === ratingModal) App.closeRatingModal(); });
 });
 
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
-    var lightbox = document.getElementById('lightbox');
-    if (lightbox && !lightbox.classList.contains('hidden')) {
-      App.closeLightbox();
-      return;
-    }
+    var lb = document.getElementById('lightbox');
+    if (lb && !lb.classList.contains('hidden')) { App.closeLightbox(); return; }
+    App.closeRatingModal();
     App.closeRequestModal();
     App.closeSidePanel();
   }
@@ -1202,38 +1339,31 @@ document.addEventListener('keydown', function(e) {
    MULTI-STEP NAVIGATION
    ============================================================ */
 function renderStep(step) {
-  [1, 2, 3, 4].forEach(function(s) {
+  [1,2,3,4].forEach(function(s) {
     var panel = document.getElementById('step-panel-' + s);
     if (panel) panel.classList.toggle('active', s === step);
   });
-
   var backBtn  = document.getElementById('modal-back-btn');
   var nextBtn  = document.getElementById('modal-next-btn');
   var nextText = nextBtn && nextBtn.querySelector('.btn-text');
-
-  if (backBtn) backBtn.style.display = step > 1 ? '' : 'none';
-  if (nextText) nextText.textContent = step === 4 ? 'Submit Request' : 'Next';
+  if (backBtn)  backBtn.style.display = step > 1 ? '' : 'none';
+  if (nextText) nextText.textContent  = step === 4 ? 'Submit Request' : 'Next';
   state.form.step = step;
 }
 
 function updateModalProgress(step) {
   var bar = document.getElementById('step-progress-bar');
   if (bar) bar.setAttribute('aria-valuenow', step);
-
-  [1, 2, 3, 4].forEach(function(s) {
+  [1,2,3,4].forEach(function(s) {
     var item = document.getElementById('step-indicator-' + s);
     var conn = document.getElementById('step-conn-' + s);
-    if (item) {
-      item.classList.toggle('active', s === step);
-      item.classList.toggle('done',   s < step);
-    }
-    if (conn) conn.classList.toggle('done', s < step);
+    if (item) { item.classList.toggle('active', s === step); item.classList.toggle('done', s < step); }
+    if (conn)   conn.classList.toggle('done', s < step);
   });
 }
 
 App.modalNext = function() {
   var step = state.form.step;
-
   if (step === 1) {
     if (!state.form.categoryId) {
       var errEl = document.getElementById('step1-error');
@@ -1243,36 +1373,28 @@ App.modalNext = function() {
     var err1 = document.getElementById('step1-error');
     if (err1) err1.textContent = '';
     renderStep(2); updateModalProgress(2);
-
   } else if (step === 2) {
     var titleEl = document.getElementById('req-title');
     var descEl  = document.getElementById('req-description');
     var titleOk = titleEl && titleEl.value.trim().length >= 3;
     var descOk  = descEl  && descEl.value.trim().length  >= 10;
-
     if (titleEl) titleEl.classList.toggle('field-invalid', !titleOk);
     if (descEl)  descEl.classList.toggle('field-invalid',  !descOk);
-
-    var titleErrEl = document.getElementById('req-title-err');
-    var descErrEl  = document.getElementById('req-desc-err');
-    if (titleErrEl) titleErrEl.textContent = titleOk ? '' : 'Title must be at least 3 characters.';
-    if (descErrEl)  descErrEl.textContent  = descOk  ? '' : 'Description must be at least 10 characters.';
-
+    var titleErr = document.getElementById('req-title-err');
+    var descErr  = document.getElementById('req-desc-err');
+    if (titleErr) titleErr.textContent = titleOk ? '' : 'Title must be at least 3 characters.';
+    if (descErr)  descErr.textContent  = descOk  ? '' : 'Description must be at least 10 characters.';
     if (!titleOk || !descOk) return;
-
     state.form.title       = titleEl.value.trim();
     state.form.description = descEl.value.trim();
     var locEl = document.getElementById('req-location');
     state.form.location = locEl ? locEl.value.trim() : '';
-
     renderStep(3); updateModalProgress(3);
-
   } else if (step === 3) {
     var checked = document.querySelector('input[name="req-priority"]:checked');
     state.form.priority = checked ? checked.value : 'medium';
     buildReviewSummary();
     renderStep(4); updateModalProgress(4);
-
   } else if (step === 4) {
     submitRequest();
   }
@@ -1284,17 +1406,15 @@ App.modalBack = function() {
 };
 
 /* ============================================================
-   CATEGORY GRID (Step 1)
+   CATEGORY GRID
    ============================================================ */
 function renderCategoryGrid() {
   var grid = document.getElementById('category-grid');
   if (!grid) return;
-
   if (!state.categories.length) {
     grid.innerHTML = '<p style="grid-column:1/-1;color:var(--text-muted);font-size:.867rem">Loading categories…</p>';
     return;
   }
-
   grid.innerHTML = state.categories.map(function(cat) {
     var meta = getCategoryMeta(cat.name);
     var sel  = state.form.categoryId === cat.id;
@@ -1313,23 +1433,21 @@ App.selectCategory = function(id, name, el) {
   state.form.categoryId   = id;
   state.form.categoryName = name;
   document.querySelectorAll('.category-tile').forEach(function(t) {
-    t.classList.remove('selected');
-    t.setAttribute('aria-checked', 'false');
+    t.classList.remove('selected'); t.setAttribute('aria-checked', 'false');
   });
-  el.classList.add('selected');
-  el.setAttribute('aria-checked', 'true');
+  el.classList.add('selected'); el.setAttribute('aria-checked', 'true');
   var errEl = document.getElementById('step1-error');
   if (errEl) errEl.textContent = '';
 };
 
 /* ============================================================
-   CHAR COUNTS (Step 2)
+   CHAR COUNTS
    ============================================================ */
 function initCharCounts() {
-  [['req-title', 'title-count', 100], ['req-description', 'desc-count', 500]].forEach(function(item) {
-    var inputId = item[0], countId = item[1], max = item[2];
-    var input   = document.getElementById(inputId);
-    var counter = document.getElementById(countId);
+  [['req-title','title-count',100],['req-description','desc-count',500]].forEach(function(item) {
+    var input   = document.getElementById(item[0]);
+    var counter = document.getElementById(item[1]);
+    var max     = item[2];
     if (!input || !counter) return;
     var update = function() { counter.textContent = input.value.length + ' / ' + max; };
     input.addEventListener('input', update);
@@ -1338,28 +1456,20 @@ function initCharCounts() {
 }
 
 /* ============================================================
-   PHOTO UPLOAD (Step 3)
+   PHOTO UPLOAD
    ============================================================ */
 function initPhotoUpload() {
   var dropzone   = document.getElementById('dropzone');
   var photoInput = document.getElementById('photo-input');
   if (!dropzone || !photoInput) return;
-
   dropzone.addEventListener('click', function() { photoInput.click(); });
-  dropzone.addEventListener('keydown', function(e) {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); photoInput.click(); }
-  });
+  dropzone.addEventListener('keydown', function(e) { if (e.key==='Enter'||e.key===' ') { e.preventDefault(); photoInput.click(); } });
   dropzone.addEventListener('dragover',  function(e) { e.preventDefault(); dropzone.classList.add('drag-over'); });
   dropzone.addEventListener('dragleave', function()  { dropzone.classList.remove('drag-over'); });
   dropzone.addEventListener('drop', function(e) {
-    e.preventDefault();
-    dropzone.classList.remove('drag-over');
-    addPhotos(Array.from(e.dataTransfer.files));
+    e.preventDefault(); dropzone.classList.remove('drag-over'); addPhotos(Array.from(e.dataTransfer.files));
   });
-  photoInput.addEventListener('change', function(e) {
-    addPhotos(Array.from(e.target.files));
-    photoInput.value = '';
-  });
+  photoInput.addEventListener('change', function(e) { addPhotos(Array.from(e.target.files)); photoInput.value = ''; });
 }
 
 function addPhotos(files) {
@@ -1378,16 +1488,13 @@ function addPhotos(files) {
 function renderPhotoThumb(file, index) {
   var previews = document.getElementById('photo-previews');
   if (!previews) return;
-
   var reader = new FileReader();
   reader.onload = function(e) {
     var div = document.createElement('div');
-    div.className = 'photo-thumb';
-    div.dataset.index = index;
+    div.className = 'photo-thumb'; div.dataset.index = index;
     div.innerHTML =
       '<img src="' + e.target.result + '" alt="' + escapeHtml(file.name) + '" loading="lazy">' +
-      '<button type="button" class="photo-thumb-remove"' +
-        ' aria-label="Remove photo ' + escapeHtml(file.name) + '"' +
+      '<button type="button" class="photo-thumb-remove" aria-label="Remove photo ' + escapeHtml(file.name) + '"' +
         ' onclick="App.removePhoto(' + index + ', this.parentElement)">×</button>' +
       '<span class="photo-thumb-info" title="' + escapeHtml(file.name) + '">' + escapeHtml(file.name) + '</span>' +
       '<span class="photo-thumb-info" style="color:var(--text-muted)">' + formatBytes(file.size) + '</span>';
@@ -1407,12 +1514,11 @@ App.removePhoto = function(index, thumbEl) {
 };
 
 /* ============================================================
-   REVIEW SUMMARY (Step 4)
+   REVIEW SUMMARY
    ============================================================ */
 function buildReviewSummary() {
   var container = document.getElementById('review-content');
   if (!container) return;
-
   var f = state.form;
   container.innerHTML =
     '<div class="review-row"><span class="review-label">Category</span><span class="review-value">' + escapeHtml(f.categoryName) + '</span></div>' +
@@ -1422,14 +1528,12 @@ function buildReviewSummary() {
     '<div class="review-row"><span class="review-label">Details</span><span class="review-value">' + escapeHtml(f.description) + '</span></div>' +
     (f.location ?
       '<div class="review-divider"></div>' +
-      '<div class="review-row"><span class="review-label">Location</span><span class="review-value">📍 ' + escapeHtml(f.location) + '</span></div>'
-    : '') +
+      '<div class="review-row"><span class="review-label">Location</span><span class="review-value">📍 ' + escapeHtml(f.location) + '</span></div>' : '') +
     '<div class="review-divider"></div>' +
     '<div class="review-row"><span class="review-label">Priority</span><span class="review-value">' + priorityBadge(f.priority) + '</span></div>' +
     (f.photos.length > 0 ?
       '<div class="review-divider"></div>' +
-      '<div class="review-row"><span class="review-label">Photos</span><span class="review-value">' + f.photos.length + ' file(s) attached</span></div>'
-    : '');
+      '<div class="review-row"><span class="review-label">Photos</span><span class="review-value">🖼️ ' + f.photos.length + ' file(s) attached</span></div>' : '');
 }
 
 /* ============================================================
@@ -1446,59 +1550,46 @@ function submitRequest() {
   f.photos.forEach(function(file) { formData.append('attachments', file); });
 
   setButtonLoading('modal-next-btn', true);
-
   API.requests.submit(formData, state.token)
     .then(function(data) {
       var ref = data.reference_number || 'N/A';
       App.closeRequestModal();
-      Toast.show('Request submitted! 🎉', 'Reference: ' + ref, 'success');
+      Toast.show('Request submitted! 🎉', 'Reference: ' + ref + ' — You earned +10 civic points!', 'success');
 
       var optimistic = {
-        id:               Date.now(),
-        reference_number: ref,
-        title:            f.title,
-        description:      f.description,
-        location_address: f.location,
-        priority:         f.priority,
-        status:           'open',
-        category_id:      f.categoryId,
-        category_name:    f.categoryName,
-        created_at:       new Date().toISOString(),
+        id: Date.now(), reference_number: ref, title: f.title, description: f.description,
+        location_address: f.location, priority: f.priority, status: 'open',
+        category_id: f.categoryId, category_name: f.categoryName,
+        created_at: new Date().toISOString(), attachments: [], responses: [], my_rating: null,
       };
       state.myRequests.unshift(optimistic);
+
+      // Update gamification optimistically
+      var currentPts = (state.user && state.user.points) || 0;
+      if (state.user) state.user.points = currentPts + 10;
+      renderGamification(currentPts + 10);
+
       renderCitizenStats();
       renderCitizenRequests(ref);
 
-      // Background refresh
+      // Background refresh after a delay
       setTimeout(function() {
-        API.requests.getMy(state.token)
-          .then(function(fresh) {
-            state.myRequests = fresh.requests || [];
-            renderCitizenStats();
-            renderCitizenRequests(null);
-          })
-          .catch(function() { /* keep optimistic */ });
+        loadCitizenData();
       }, 2500);
     })
-    .catch(function(err) {
-      Toast.show('Submission failed', err.message || 'Please try again.', 'error');
-    })
-    .finally(function() {
-      setButtonLoading('modal-next-btn', false);
-    });
+    .catch(function(err) { Toast.show('Submission failed', err.message || 'Please try again.', 'error'); })
+    .finally(function() { setButtonLoading('modal-next-btn', false); });
 }
 
 /* ============================================================
    INIT
    ============================================================ */
 document.addEventListener('DOMContentLoaded', function() {
-  // Form submissions
   var signinForm   = document.getElementById('signin-form');
   var registerForm = document.getElementById('register-form');
   if (signinForm)   signinForm.addEventListener('submit',   handleSignIn);
   if (registerForm) registerForm.addEventListener('submit', handleRegister);
 
-  // Inline validation on blur
   var validationMap = [
     ['signin-email',    'email',    'signin-email-err',    'signin-email-icon'],
     ['signin-password', 'password', 'signin-password-err', null],
@@ -1519,34 +1610,22 @@ document.addEventListener('DOMContentLoaded', function() {
   initPhotoUpload();
   initCharCounts();
 
-  // Load categories
   API.categories.getAll()
-    .then(function(data) {
-      state.categories = data.categories || [];
-    })
-    .catch(function(err) {
-      console.warn('[Init] Categories fallback:', err.message);
+    .then(function(data) { state.categories = data.categories || []; })
+    .catch(function() {
       state.categories = [
-        { id: 1,  name: 'Roads - Pothole' },
-        { id: 2,  name: 'Roads - Street Damage' },
-        { id: 3,  name: 'Water - Leakage' },
-        { id: 4,  name: 'Water - Supply Issue' },
-        { id: 5,  name: 'Electricity - Outage' },
-        { id: 6,  name: 'Electricity - Streetlight' },
-        { id: 7,  name: 'Sanitation - Garbage' },
-        { id: 8,  name: 'Sanitation - Drainage' },
-        { id: 9,  name: 'Public Safety - Lighting' },
-        { id: 10, name: 'Public Safety - Other' },
+        { id: 1, name: 'Roads - Pothole' },    { id: 2, name: 'Roads - Street Damage' },
+        { id: 3, name: 'Water - Leakage' },    { id: 4, name: 'Water - Supply Issue' },
+        { id: 5, name: 'Electricity - Outage' },{ id: 6, name: 'Electricity - Streetlight' },
+        { id: 7, name: 'Sanitation - Garbage' },{ id: 8, name: 'Sanitation - Drainage' },
+        { id: 9, name: 'Public Safety - Lighting' },{ id: 10, name: 'Public Safety - Other' },
       ];
     });
 
-  // Non-blocking health check
   API.healthCheck();
 
-  // Restore session
   var savedToken = localStorage.getItem('token');
   var savedUser  = localStorage.getItem('user');
-
   if (savedToken && savedUser) {
     try {
       state.token = savedToken;

@@ -13,11 +13,11 @@ async function _request(method, path, body, token) {
   if (body && !(body instanceof FormData)) {
     opts.body = JSON.stringify(body);
   } else if (body instanceof FormData) {
-    delete headers['Content-Type']; // let browser set multipart boundary
+    delete headers['Content-Type'];
     opts.body = body;
   }
 
-  const res = await fetch(API_URL + path, opts);
+  const res  = await fetch(API_URL + path, opts);
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {
@@ -30,9 +30,9 @@ async function _request(method, path, body, token) {
 class ApiError extends Error {
   constructor(message, status, data) {
     super(message);
-    this.name = 'ApiError';
+    this.name   = 'ApiError';
     this.status = status;
-    this.data = data;
+    this.data   = data;
   }
 }
 
@@ -45,7 +45,7 @@ const auth = {
   },
 
   async register(full_name, email, phone, password) {
-    const national_id = 'TEMP' + Date.now();
+    const national_id = 'N/A';
     return _request('POST', '/auth/register', { full_name, email, phone, password, national_id });
   },
 
@@ -55,6 +55,15 @@ const auth = {
 
   async resendOtp(email) {
     return _request('POST', '/auth/resend-otp', { email });
+  },
+};
+
+/* ============================================================
+   USER / GAMIFICATION
+   ============================================================ */
+const user = {
+  async getProfile(token) {
+    return _request('GET', '/user/profile', null, token);
   },
 };
 
@@ -76,16 +85,18 @@ const requests = {
   },
 
   async submit(formData, token) {
-    const res = await fetch(API_URL + '/requests', {
-      method: 'POST',
+    const res  = await fetch(API_URL + '/requests', {
+      method:  'POST',
       headers: { 'Authorization': `Bearer ${token}` },
-      body: formData,
+      body:    formData,
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      throw new ApiError(data.message || 'Submission failed', res.status, data);
-    }
+    if (!res.ok) throw new ApiError(data.message || 'Submission failed', res.status, data);
     return data;
+  },
+
+  async rate(id, rating, feedback, token) {
+    return _request('POST', `/requests/${id}/rate`, { rating, feedback }, token);
   },
 };
 
@@ -116,6 +127,10 @@ const admin = {
   async addNote(id, note, token) {
     return _request('POST', `/admin/requests/${id}/notes`, { note }, token);
   },
+
+  async addResponse(id, message, token) {
+    return _request('POST', `/admin/requests/${id}/response`, { message }, token);
+  },
 };
 
 /* ============================================================
@@ -123,7 +138,7 @@ const admin = {
    ============================================================ */
 async function healthCheck() {
   try {
-    const res = await fetch(API_URL.replace('/api', '/health'));
+    const res  = await fetch(API_URL.replace('/api', '/health'));
     const data = await res.json();
     console.log('[API] Health:', data.status);
     return true;
@@ -134,4 +149,4 @@ async function healthCheck() {
 }
 
 /* Export to global scope */
-window.API = { auth, categories, requests, admin, healthCheck, ApiError };
+window.API = { auth, user, categories, requests, admin, healthCheck, ApiError };

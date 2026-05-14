@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Smart Citizen Request System</title>
   <meta name="description" content="Submit and track city service requests — potholes, water leaks, streetlights, and more.">
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234F46E5'/><text y='.9em' font-size='72' x='12'>🏛️</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -33,7 +35,7 @@
         </div>
         <span class="auth-logo-name">Smart Citizen</span>
       </div>
-      <p class="auth-tagline">Report city issues. Track resolutions.</p>
+      <p class="auth-tagline">Report city issues. Track resolutions. Earn rewards.</p>
 
       <!-- Tabs -->
       <div class="auth-tabs" role="tablist" aria-label="Authentication">
@@ -212,7 +214,8 @@
         </button>
         <p class="otp-resend">
           Didn't receive the code?
-          <button type="button" class="otp-resend-btn" id="resend-btn" onclick="App.resendOtp()">Resend</button>
+          <button type="button" class="otp-resend-btn" id="resend-btn" onclick="App.resendOtp()">Resend code</button>
+          <span id="resend-timer" class="otp-resend-timer hidden"></span>
         </p>
         <button class="btn btn-secondary btn-full" style="margin-top:8px"
                 onclick="App.switchAuthTab('signin')">Back to Sign In</button>
@@ -239,6 +242,11 @@
           <span class="header-logo-name">Smart Citizen</span>
           <span class="header-logo-tag">Request System</span>
         </div>
+        <!-- Gamification badge in header -->
+        <div class="header-xp" id="header-xp" title="Your civic points and level" aria-label="Civic points">
+          <span class="xp-badge-icon" id="header-badge-icon">🏅</span>
+          <span class="xp-points" id="header-points">0 pts</span>
+        </div>
         <div class="header-user">
           <button class="user-menu-btn" id="citizen-menu-btn" aria-haspopup="true" aria-expanded="false"
                   onclick="App.toggleUserMenu('citizen')">
@@ -263,9 +271,27 @@
 
     <main class="app-main" id="citizen-main">
 
+      <!-- Gamification Level Card -->
+      <div class="xp-level-card" id="xp-level-card" aria-label="Your civic level and points">
+        <div class="xp-level-left">
+          <div class="xp-avatar-large" id="xp-avatar-emoji">🏅</div>
+          <div>
+            <div class="xp-level-label">Level <span id="xp-level-num">1</span></div>
+            <div class="xp-badge-name" id="xp-badge-name">Newcomer</div>
+          </div>
+        </div>
+        <div class="xp-level-right">
+          <div class="xp-pts-value" id="xp-pts-value">0</div>
+          <div class="xp-pts-label">Civic Points</div>
+          <div class="xp-progress-wrap">
+            <div class="xp-progress-bar" id="xp-progress-bar" style="width:0%"></div>
+          </div>
+          <div class="xp-pts-next" id="xp-pts-next">30 pts to next level</div>
+        </div>
+      </div>
+
       <!-- Stats Grid (skeleton initially) -->
       <div class="stats-grid" id="citizen-stats-grid" aria-label="Request statistics">
-        <!-- Populated by JS (skeleton first, then real data) -->
         <div class="stat-card-skeleton">
           <div class="skeleton skel-icon" style="width:44px;height:44px;border-radius:10px"></div>
           <div class="skeleton skel-text" style="width:60%"></div>
@@ -327,17 +353,6 @@
               <div class="skeleton skel-badge"></div>
             </div>
             <div class="skeleton skel-text" style="width:55%"></div>
-          </div>
-        </div>
-        <div class="request-card-skel">
-          <div class="skeleton skel-icon"></div>
-          <div style="flex:1;display:flex;flex-direction:column;gap:8px">
-            <div class="skeleton skel-title" style="width:50%"></div>
-            <div style="display:flex;gap:8px">
-              <div class="skeleton skel-badge"></div>
-              <div class="skeleton skel-badge"></div>
-            </div>
-            <div class="skeleton skel-text" style="width:40%"></div>
           </div>
         </div>
       </div>
@@ -470,7 +485,6 @@
                 </tr>
               </thead>
               <tbody id="admin-tbody" aria-live="polite">
-                <!-- Skeleton rows -->
                 <tr class="table-skel-row"><td colspan="7"><div class="skeleton skel-text" style="width:80%"></div></td></tr>
                 <tr class="table-skel-row"><td colspan="7"><div class="skeleton skel-text" style="width:70%"></div></td></tr>
                 <tr class="table-skel-row"><td colspan="7"><div class="skeleton skel-text" style="width:75%"></div></td></tr>
@@ -564,7 +578,6 @@
             Choose the category that best describes your issue.
           </p>
           <div class="category-grid" id="category-grid" aria-label="Service categories">
-            <!-- Populated by JS -->
             <div class="skeleton" style="height:100px;border-radius:var(--r-card)"></div>
             <div class="skeleton" style="height:100px;border-radius:var(--r-card)"></div>
             <div class="skeleton" style="height:100px;border-radius:var(--r-card)"></div>
@@ -652,8 +665,11 @@
           <p id="step4-heading" style="font-size:.867rem;color:var(--text-secondary);margin-bottom:14px;">
             Review your request before submitting.
           </p>
-          <div class="review-summary" id="review-content" aria-label="Request summary">
-            <!-- Populated by JS -->
+          <div class="review-summary" id="review-content" aria-label="Request summary"></div>
+          <!-- XP reward preview -->
+          <div class="xp-reward-preview" aria-hidden="true">
+            <span class="xp-reward-icon">⚡</span>
+            <span>You'll earn <strong>+10 civic points</strong> for submitting this request</span>
           </div>
         </div>
 
@@ -670,6 +686,53 @@
         </button>
       </div>
 
+    </div>
+  </div>
+
+  <!-- ===================================================
+       RATING MODAL
+       =================================================== -->
+  <div class="modal-overlay hidden" id="rating-modal" role="dialog" aria-modal="true" aria-labelledby="rating-modal-title">
+    <div class="modal modal-sm" role="document">
+      <div class="modal-header">
+        <h2 class="modal-title" id="rating-modal-title">Rate the Response</h2>
+        <button class="btn-icon" aria-label="Close" onclick="App.closeRatingModal()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="rating-request-id" value="">
+        <p class="rating-prompt">How satisfied are you with how this request was handled?</p>
+        <div class="star-rating" id="star-rating" role="radiogroup" aria-label="Rating 1 to 5 stars">
+          <button type="button" class="star" data-val="1" onclick="App.setRatingStar(1)" aria-label="1 star">★</button>
+          <button type="button" class="star" data-val="2" onclick="App.setRatingStar(2)" aria-label="2 stars">★</button>
+          <button type="button" class="star" data-val="3" onclick="App.setRatingStar(3)" aria-label="3 stars">★</button>
+          <button type="button" class="star" data-val="4" onclick="App.setRatingStar(4)" aria-label="4 stars">★</button>
+          <button type="button" class="star" data-val="5" onclick="App.setRatingStar(5)" aria-label="5 stars">★</button>
+        </div>
+        <div class="rating-label-row">
+          <span class="rating-label-left">Poor</span>
+          <span class="rating-selected-label" id="rating-selected-label">Tap a star to rate</span>
+          <span class="rating-label-right">Excellent</span>
+        </div>
+        <div class="field-group" style="margin-top:16px">
+          <label for="rating-feedback">Comments <span style="font-weight:400;color:var(--text-muted)">(optional)</span></label>
+          <textarea id="rating-feedback" rows="3" placeholder="Tell us more about your experience…" style="resize:none"></textarea>
+        </div>
+        <div class="xp-reward-preview" style="margin-top:12px" aria-hidden="true">
+          <span class="xp-reward-icon">⚡</span>
+          <span>Earn <strong>+5 civic points</strong> for providing feedback</span>
+        </div>
+      </div>
+      <div class="modal-footer" style="justify-content:flex-end;gap:10px">
+        <button class="btn btn-secondary" onclick="App.closeRatingModal()">Cancel</button>
+        <button class="btn btn-primary" id="submit-rating-btn" onclick="App.submitRating()">
+          <span class="btn-text">Submit Rating</span>
+          <span class="btn-spinner hidden" aria-hidden="true"></span>
+        </button>
+      </div>
     </div>
   </div>
 

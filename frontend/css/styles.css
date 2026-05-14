@@ -1946,3 +1946,348 @@ input[type="password"] { padding-right: 42px; }
   .pagination { justify-content: center; }
   .pagination-info { width: 100%; text-align: center; }
 }
+
+/* ============================================================
+   GAMIFICATION — Level Card & Header Badge
+   ============================================================ */
+.header-xp {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--accent-light);
+  border: 1px solid var(--accent-border);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: default;
+  user-select: none;
+}
+.xp-badge-icon { font-size: 1rem; }
+.xp-points     { letter-spacing: -0.01em; }
+
+.xp-level-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+  color: #fff;
+  border-radius: var(--r-card);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  gap: 16px;
+  box-shadow: 0 4px 20px rgba(79,70,229,.25);
+}
+.xp-level-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+.xp-avatar-large {
+  font-size: 2.4rem;
+  width: 56px;
+  height: 56px;
+  background: rgba(255,255,255,.15);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.xp-level-label {
+  font-size: 0.78rem;
+  font-weight: 500;
+  opacity: .8;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+.xp-badge-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-top: 2px;
+}
+.xp-level-right {
+  text-align: right;
+  min-width: 120px;
+}
+.xp-pts-value {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.xp-pts-label {
+  font-size: 0.75rem;
+  opacity: .75;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-top: 2px;
+}
+.xp-progress-wrap {
+  background: rgba(255,255,255,.2);
+  border-radius: 4px;
+  height: 6px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+.xp-progress-bar {
+  background: #fff;
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s ease;
+}
+.xp-pts-next {
+  font-size: 0.72rem;
+  opacity: .7;
+  margin-top: 4px;
+}
+
+/* XP reward preview in modal */
+.xp-reward-preview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 16px;
+  font-size: 0.867rem;
+  color: #92400e;
+}
+.xp-reward-icon { font-size: 1.1rem; }
+
+/* OTP resend timer */
+.otp-resend-timer {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-left: 4px;
+}
+
+/* ============================================================
+   CITIZEN REQUEST CARDS — Images & Responses
+   ============================================================ */
+.req-desc-text {
+  font-size: 0.867rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+.req-cat-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+/* Image row */
+.req-images-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  margin-bottom: 4px;
+}
+.req-img-thumb {
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  padding: 0;
+  background: var(--bg-subtle);
+  transition: border-color var(--t-fast), transform var(--t-fast);
+  flex-shrink: 0;
+}
+.req-img-thumb:hover { border-color: var(--accent); transform: scale(1.04); }
+.req-img-thumb img   { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Response cards */
+.req-responses { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+
+.req-response-card {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-left: 3px solid #10B981;
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+.req-response-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.req-response-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: #065f46;
+  background: #d1fae5;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+.req-response-by   { font-size: 0.8rem; font-weight: 600; color: #065f46; }
+.req-response-date { font-size: 0.75rem; color: #6b7280; margin-left: auto; }
+.req-response-msg  { font-size: 0.867rem; color: #1e293b; line-height: 1.55; }
+
+/* Response indicator badge in req-card-info */
+.resp-indicator { color: #10B981; font-weight: 600; }
+
+/* ============================================================
+   RATING — Citizen View
+   ============================================================ */
+.req-rating-cta { margin-top: 14px; }
+.btn-sm {
+  font-size: 0.8rem;
+  padding: 6px 12px;
+  border-radius: 6px;
+}
+
+.req-rating-done {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  font-size: 0.867rem;
+}
+.req-rating-label { color: var(--text-muted); font-size: 0.78rem; }
+.req-rating-fb    { color: var(--text-secondary); font-style: italic; font-size: 0.8rem; }
+.btn-rate-update  {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: background var(--t-fast);
+}
+.btn-rate-update:hover { background: var(--bg-subtle); }
+
+/* Star Rating — shared */
+.stars-display { display: inline-flex; gap: 2px; }
+.star-display  { color: #d1d5db; font-size: 1.2rem; }
+.star-display.filled { color: #f59e0b; }
+
+/* Rating Modal */
+.modal-sm { max-width: 440px; }
+
+.rating-prompt {
+  font-size: 0.933rem;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.star-rating {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+.star {
+  font-size: 2.4rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #d1d5db;
+  padding: 0;
+  line-height: 1;
+  transition: color var(--t-fast), transform var(--t-fast);
+}
+.star:hover, .star.active { color: #f59e0b; transform: scale(1.15); }
+.star:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+
+.rating-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+.rating-selected-label {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.867rem;
+  text-align: center;
+}
+
+/* ============================================================
+   ADMIN PANEL — Response & Note Blocks
+   ============================================================ */
+.panel-action-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.panel-action-block:first-of-type { border-top: none; margin-top: 12px; padding-top: 0; }
+
+.panel-action-sub {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-muted);
+  margin-left: 4px;
+}
+
+/* Admin responses list in panel */
+.panel-response-item {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.panel-response-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+  font-size: 0.8rem;
+}
+.panel-response-admin { font-weight: 600; color: #065f46; }
+.panel-response-date  { color: var(--text-muted); }
+.panel-response-vis   { font-size: 0.72rem; margin-left: auto; color: var(--text-muted); }
+.panel-response-msg   { font-size: 0.867rem; color: #1e293b; line-height: 1.55; }
+
+/* Timeline private label */
+.timeline-private {
+  font-size: 0.72rem;
+  background: #fef3c7;
+  color: #92400e;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+/* Admin panel rating display */
+.panel-rating-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.panel-rating-val { font-weight: 700; color: var(--text-primary); font-size: 0.933rem; }
+.panel-rating-feedback {
+  font-size: 0.867rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  background: var(--bg-subtle);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+@media (max-width: 639px) {
+  .xp-level-card { flex-direction: column; align-items: flex-start; }
+  .xp-level-right { text-align: left; width: 100%; }
+  .header-xp .xp-points { display: none; }
+  .req-img-thumb { width: 60px; height: 60px; }
+}
