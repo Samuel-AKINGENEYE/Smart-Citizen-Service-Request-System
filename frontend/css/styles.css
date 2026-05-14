@@ -2291,3 +2291,509 @@ input[type="password"] { padding-right: 42px; }
   .header-xp .xp-points { display: none; }
   .req-img-thumb { width: 60px; height: 60px; }
 }
+
+/* ============================================================
+   DESCRIPTION PREVIEW IN CITIZEN CARD HEADER
+   ============================================================ */
+.req-desc-preview {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin-top: 3px;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* ============================================================
+   IMPROVED PANEL RESPONSE ITEMS
+   ============================================================ */
+.panel-response-item {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border: 1px solid #bbf7d0;
+  border-left: 3px solid #10B981;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  transition: box-shadow var(--t-fast);
+}
+.panel-response-item:last-child { margin-bottom: 0; }
+.panel-response-item:hover { box-shadow: 0 2px 8px rgba(16,185,129,0.12); }
+
+.panel-response-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+  font-size: 0.8rem;
+}
+.panel-response-admin {
+  font-weight: 700;
+  color: #065f46;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.panel-response-admin::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10B981;
+}
+.panel-response-date { color: var(--text-muted); font-size: 0.75rem; }
+.panel-response-vis {
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: #d1fae5;
+  color: #065f46;
+  border-radius: 4px;
+  padding: 2px 7px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.panel-response-msg {
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  line-height: 1.65;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ============================================================
+   ADMIN ACTION BLOCKS — Public Response & Internal Note
+   ============================================================ */
+.panel-action-block {
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-subtle);
+}
+
+.panel-action-block.response-block {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border-color: #a7f3d0;
+}
+
+.panel-action-block.note-block {
+  background: linear-gradient(135deg, #fffbeb 0%, #fef9ee 100%);
+  border-color: #fde68a;
+}
+
+.panel-action-block-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.panel-action-block-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.response-icon {
+  background: #d1fae5;
+}
+
+.note-icon {
+  background: #fef3c7;
+}
+
+.panel-action-block-title {
+  font-size: 0.867rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.panel-action-block-sub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 1px;
+  line-height: 1.4;
+}
+
+.panel-action-block .panel-note-textarea {
+  min-height: 90px;
+}
+
+.response-block .panel-note-textarea {
+  background: #fff;
+  border-color: #a7f3d0;
+}
+.response-block .panel-note-textarea:focus {
+  border-color: #10B981;
+  box-shadow: 0 0 0 3px rgba(16,185,129,0.15);
+}
+
+.note-block .panel-note-textarea {
+  background: #fff;
+  border-color: #fde68a;
+}
+.note-block .panel-note-textarea:focus {
+  border-color: #F59E0B;
+  box-shadow: 0 0 0 3px rgba(245,158,11,0.15);
+}
+
+/* ============================================================
+   IMPROVED TIMELINE
+   ============================================================ */
+.timeline-private {
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: #fef3c7;
+  color: #92400e;
+  padding: 1px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* ============================================================
+   IMPROVED PANEL RATING
+   ============================================================ */
+.panel-rating-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.panel-rating-val {
+  font-weight: 800;
+  color: var(--text-primary);
+  font-size: 1rem;
+}
+.panel-rating-feedback {
+  font-size: 0.867rem;
+  color: var(--text-secondary);
+  font-style: italic;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 10px 14px;
+  line-height: 1.6;
+}
+
+/* ============================================================
+   IMPROVED CITIZEN REQUEST CARD BODY
+   ============================================================ */
+.req-card-body {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+  margin-top: 12px;
+}
+
+.req-desc-text {
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: 12px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* ============================================================
+   IMPROVED PANEL SECTION TITLE
+   ============================================================ */
+.panel-section-title {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ============================================================
+   IMPROVED PANEL DESC FULL
+   ============================================================ */
+.panel-desc-full {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: var(--bg-subtle);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  min-height: 60px;
+}
+
+/* ============================================================
+   IMPROVED ATTACHMENT GALLERY EMPTY STATE
+   ============================================================ */
+.attach-no-images {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 24px 16px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  background: var(--bg-subtle);
+  border-radius: var(--r-input);
+  border: 2px dashed var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  line-height: 1.4;
+}
+.attach-no-images::before {
+  content: '📷';
+  font-size: 1.6rem;
+  display: block;
+  margin-bottom: 2px;
+}
+
+/* ============================================================
+   IMPROVED ADMIN STATS CARDS
+   ============================================================ */
+.stat-card {
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: box-shadow var(--t-fast), transform var(--t-fast);
+}
+.stat-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  transform: translateY(-1px);
+}
+.stat-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+.stat-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.stat-value {
+  font-size: 1.85rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+/* ============================================================
+   IMPROVED CITIZEN STAT CARDS
+   ============================================================ */
+#citizen-stats-grid .stat-card {
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+}
+#citizen-stats-grid .stat-icon-wrap { flex-shrink: 0; }
+#citizen-stats-grid .stat-label     { margin-bottom: 2px; }
+
+/* ============================================================
+   PANEL ACTIONS SECTION HEADER
+   ============================================================ */
+.admin-action-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.admin-action-row {
+  display: flex;
+  gap: 8px;
+}
+.admin-action-row .select-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.select-wrap-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+.status-select, .priority-select { width: 100%; }
+
+/* ============================================================
+   IMPROVED REQUEST CARD
+   ============================================================ */
+.request-card {
+  border: 1px solid var(--border);
+  border-radius: var(--r-card);
+  background: var(--bg-white);
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: border-color var(--t-fast), box-shadow var(--t-fast);
+  overflow: hidden;
+}
+.request-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+}
+.request-card.highlight {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
+  animation: cardPulse 0.5s ease;
+}
+@keyframes cardPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(79,70,229,0.35); }
+  100% { box-shadow: 0 0 0 3px rgba(79,70,229,0.12); }
+}
+.request-card.expanded {
+  border-color: var(--accent);
+  box-shadow: 0 4px 20px rgba(79,70,229,0.1);
+}
+.request-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+}
+.req-cat-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+.req-card-meta { flex: 1; min-width: 0; }
+.req-card-title {
+  font-size: 0.933rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.req-card-badges { display: flex; gap: 6px; margin-top: 5px; flex-wrap: wrap; }
+.req-card-info {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.req-chevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform var(--t-base);
+  margin-top: 4px;
+}
+.request-card.expanded .req-chevron { transform: rotate(90deg); }
+
+/* ============================================================
+   IMPROVED PANEL CASE HEADER
+   ============================================================ */
+.panel-ref-chip {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: var(--bg-subtle);
+  padding: 3px 10px;
+  border-radius: 5px;
+  display: inline-block;
+  width: fit-content;
+  border: 1px solid var(--border);
+  letter-spacing: 0.02em;
+}
+
+/* ============================================================
+   IMPROVED BADGES
+   ============================================================ */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: var(--r-badge);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+}
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.badge-open        { background: var(--open-bg);     color: var(--open-color);     border-color: #BFDBFE; }
+.badge-in_progress { background: var(--progress-bg); color: var(--progress-color); border-color: #FDE68A; }
+.badge-resolved    { background: var(--resolved-bg); color: var(--resolved-color); border-color: #A7F3D0; }
+.badge-rejected    { background: var(--rejected-bg); color: var(--rejected-color); border-color: #FECACA; }
+.badge-low         { background: var(--low-bg);      color: var(--low-color);      border-color: #CBD5E1; }
+.badge-medium      { background: var(--medium-bg);   color: var(--medium-color);   border-color: #BFDBFE; }
+.badge-high        { background: var(--high-bg);     color: var(--high-color);     border-color: #FED7AA; }
+.badge-urgent-p    { background: var(--urgent-bg);   color: var(--urgent-color);   border-color: #FECACA; }
+
+/* ============================================================
+   RESPONSE INDICATOR BADGE IMPROVED
+   ============================================================ */
+.resp-indicator {
+  color: #10B981;
+  font-weight: 700;
+  background: #ecfdf5;
+  border-radius: 10px;
+  padding: 1px 8px;
+}
+
+/* ============================================================
+   SUBMIT BUTTON AREA IMPROVED
+   ============================================================ */
+.submit-cta-btn {
+  background: linear-gradient(135deg, var(--accent) 0%, #7C3AED 100%);
+  border: none;
+  box-shadow: 0 4px 20px rgba(79,70,229,0.35);
+  transition: box-shadow var(--t-fast), transform var(--t-fast), opacity var(--t-fast);
+}
+.submit-cta-btn:hover:not(:disabled) {
+  box-shadow: 0 6px 28px rgba(79,70,229,0.45);
+  transform: translateY(-1px);
+}
+
+/* ============================================================
+   RESPONSIVE IMPROVEMENTS
+   ============================================================ */
+@media (max-width: 639px) {
+  .admin-action-row { flex-direction: column; }
+  .panel-action-block-label { gap: 8px; }
+  .panel-action-block-icon { width: 30px; height: 30px; font-size: 14px; }
+  .req-card-info { gap: 6px; }
+}

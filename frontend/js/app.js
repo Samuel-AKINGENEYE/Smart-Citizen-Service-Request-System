@@ -70,6 +70,14 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
+var _apiBase = 'https://scrs-api.onrender.com';
+function _imgUrl(url) {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/')) return _apiBase + url;
+  return url;
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return '—';
   try { return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
@@ -557,7 +565,7 @@ function renderCitizenRequests(newRefNum) {
     if (hasImages) {
       imagesHtml = '<div class="req-images-row" aria-label="Attached photos">';
       req.attachments.forEach(function(att, idx) {
-        var url  = att.file_url || att.url || '';
+        var url  = _imgUrl(att.file_url || att.url || '');
         var name = escapeHtml(att.file_name || ('Image ' + (idx + 1)));
         imagesHtml += '<button type="button" class="req-img-thumb" ' +
           'onclick="event.stopPropagation();App.openCitizenLightbox(' + JSON.stringify(req.attachments) + ',' + idx + ')" ' +
@@ -609,6 +617,10 @@ function renderCitizenRequests(newRefNum) {
       }
     }
 
+    var descPreview = req.description
+      ? escapeHtml(req.description.length > 90 ? req.description.slice(0, 90) + '…' : req.description)
+      : '';
+
     return '<div class="request-card' + (isNew ? ' highlight' : '') + '"' +
       ' tabindex="0" role="button"' +
       ' aria-label="Request: ' + escapeHtml(req.title) + ', Status: ' + (req.status || 'open') + '"' +
@@ -618,6 +630,7 @@ function renderCitizenRequests(newRefNum) {
         '<div class="req-cat-icon" style="background:' + meta.bg + '" aria-hidden="true">' + meta.emoji + '</div>' +
         '<div class="req-card-meta">' +
           '<div class="req-card-title">' + escapeHtml(req.title) + '</div>' +
+          (descPreview ? '<div class="req-desc-preview">' + descPreview + '</div>' : '') +
           '<div class="req-card-badges">' + statusBadge(req.status) + priorityBadge(req.priority) + '</div>' +
           '<div class="req-card-info">' +
             '<span>📎 ' + escapeHtml(req.reference_number || '—') + '</span>' +
@@ -1095,7 +1108,7 @@ function _renderPanelContent(container, req) {
     html += '<div class="attach-no-images">📷 No images attached</div>';
   } else {
     attachments.forEach(function(att, idx) {
-      var url  = att.file_url || att.url || String(att);
+      var url  = _imgUrl(att.file_url || att.url || String(att));
       var name = escapeHtml(att.file_name || att.name || ('Image ' + (idx + 1)));
       html += '<div class="attach-thumb" role="button" tabindex="0" aria-label="View ' + name + '"' +
         ' onclick="App.openLightbox(' + idx + ')"' +
@@ -1173,6 +1186,7 @@ function _renderPanelContent(container, req) {
 
       '<div class="admin-action-row">' +
         '<div class="select-wrap">' +
+          '<span class="select-wrap-label">Status</span>' +
           '<select id="panel-status-select" class="status-select status-' + (req.status||'open') + '"' +
             ' aria-label="Update status" onchange="App.updateStatus(' + req.id + ', this.value, this)">' +
             '<option value="open"'        + (req.status==='open'        ?' selected':'') + '>Open</option>' +
@@ -1182,6 +1196,7 @@ function _renderPanelContent(container, req) {
           '</select>' +
         '</div>' +
         '<div class="select-wrap">' +
+          '<span class="select-wrap-label">Priority</span>' +
           '<select id="panel-priority-select" class="priority-select priority-' + (req.priority||'medium') + '"' +
             ' aria-label="Update priority" onchange="App.updatePriority(' + req.id + ', this.value, this)">' +
             '<option value="low"'    + (req.priority==='low'    ?' selected':'') + '>Low</option>' +
@@ -1193,10 +1208,14 @@ function _renderPanelContent(container, req) {
       '</div>' +
 
       /* Public response to citizen */
-      '<div class="panel-action-block">' +
-        '<label for="panel-response" class="panel-note-label">' +
-          '💬 Public Response <span class="panel-action-sub">(visible to citizen, sends email notification)</span>' +
-        '</label>' +
+      '<div class="panel-action-block response-block">' +
+        '<div class="panel-action-block-label">' +
+          '<span class="panel-action-block-icon response-icon">💬</span>' +
+          '<div>' +
+            '<div class="panel-action-block-title">Public Response</div>' +
+            '<div class="panel-action-block-sub">Visible to citizen · sends email notification</div>' +
+          '</div>' +
+        '</div>' +
         '<textarea id="panel-response" class="panel-note-textarea"' +
           ' placeholder="Write an official response that the citizen will see on their dashboard…"' +
           ' aria-label="Public response to citizen"></textarea>' +
@@ -1209,17 +1228,21 @@ function _renderPanelContent(container, req) {
       '</div>' +
 
       /* Private internal note */
-      '<div class="panel-action-block">' +
-        '<label for="panel-note" class="panel-note-label">' +
-          '🔒 Internal Note <span class="panel-action-sub">(not visible to citizen)</span>' +
-        '</label>' +
+      '<div class="panel-action-block note-block">' +
+        '<div class="panel-action-block-label">' +
+          '<span class="panel-action-block-icon note-icon">🔒</span>' +
+          '<div>' +
+            '<div class="panel-action-block-title">Internal Note</div>' +
+            '<div class="panel-action-block-sub">Not visible to citizen · team only</div>' +
+          '</div>' +
+        '</div>' +
         '<textarea id="panel-note" class="panel-note-textarea"' +
           ' placeholder="Add an internal note for your team…"' +
           ' aria-label="Internal admin note"></textarea>' +
         '<button class="btn btn-secondary btn-full" id="save-note-btn"' +
           ' onclick="App.saveAdminNote(' + req.id + ')">' +
           '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>' +
-          '<span class="btn-text">Save Note</span>' +
+          '<span class="btn-text">Save Internal Note</span>' +
           '<span class="btn-spinner hidden" aria-hidden="true"></span>' +
         '</button>' +
       '</div>' +

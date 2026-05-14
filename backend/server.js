@@ -312,7 +312,9 @@ app.post('/api/requests', authenticateToken, upload.array('attachments', 5), asy
     // Save attachments
     if (req.files?.length) {
       for (const file of req.files) {
-        const fileUrl = `${BASE_URL}/uploads/${file.filename}`;
+        const host    = req.get('host') || 'scrs-api.onrender.com';
+        const proto   = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+        const fileUrl = `${proto}://${host}/uploads/${file.filename}`;
         await q(
           'INSERT INTO request_attachments (request_id, file_url, file_name, file_size, mime_type) VALUES (?, ?, ?, ?, ?)',
           [reqId, fileUrl, file.originalname, file.size, file.mimetype]
