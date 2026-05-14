@@ -29,27 +29,6 @@ const state = {
 };
 
 /* ============================================================
-   THEME MANAGEMENT
-   ============================================================ */
-const Theme = {
-  KEY: 'scrs-theme',
-  init: function() {
-    var saved = localStorage.getItem(this.KEY) || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    this.apply(saved);
-  },
-  apply: function(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    localStorage.setItem(this.KEY, theme);
-  },
-  toggle: function() {
-    var current = document.documentElement.getAttribute('data-theme') || 'light';
-    this.apply(current === 'dark' ? 'light' : 'dark');
-  },
-};
-
-App.toggleTheme = function() { Theme.toggle(); };
-
-/* ============================================================
    STREAK TRACKING
    ============================================================ */
 var Streak = {
@@ -1829,9 +1808,6 @@ function submitRequest() {
    INIT
    ============================================================ */
 document.addEventListener('DOMContentLoaded', function() {
-  // Initialize theme immediately
-  Theme.init();
-
   var signinForm   = document.getElementById('signin-form');
   var registerForm = document.getElementById('register-form');
   if (signinForm)   signinForm.addEventListener('submit',   handleSignIn);
