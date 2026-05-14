@@ -23,7 +23,21 @@
        AUTH VIEW
        =================================================== -->
   <div id="auth-view" class="auth-view">
-    <div class="auth-card" role="main">
+    <div class="auth-card" role="main" style="position:relative">
+
+      <!-- Theme toggle (auth page) -->
+      <button class="btn-icon theme-toggle auth-theme-toggle" id="auth-theme-toggle"
+              aria-label="Toggle dark mode" onclick="App.toggleTheme()">
+        <svg class="icon-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+        </svg>
+        <svg class="icon-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </svg>
+      </button>
 
       <!-- Logo -->
       <div class="auth-logo">
@@ -247,6 +261,18 @@
           <span class="xp-badge-icon" id="header-badge-icon">🏅</span>
           <span class="xp-points" id="header-points">0 pts</span>
         </div>
+        <button class="theme-toggle" id="citizen-theme-toggle" aria-label="Toggle dark mode"
+                onclick="App.toggleTheme()">
+          <svg class="icon-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+          </svg>
+          <svg class="icon-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+        </button>
         <div class="header-user">
           <button class="user-menu-btn" id="citizen-menu-btn" aria-haspopup="true" aria-expanded="false"
                   onclick="App.toggleUserMenu('citizen')">
@@ -278,6 +304,10 @@
           <div>
             <div class="xp-level-label">Level <span id="xp-level-num">1</span></div>
             <div class="xp-badge-name" id="xp-badge-name">Newcomer</div>
+            <div class="streak-badge" id="streak-badge" style="display:none">
+              <span class="streak-fire">🔥</span>
+              <span id="streak-text">0 day streak</span>
+            </div>
           </div>
         </div>
         <div class="xp-level-right">
@@ -287,6 +317,17 @@
             <div class="xp-progress-bar" id="xp-progress-bar" style="width:0%"></div>
           </div>
           <div class="xp-pts-next" id="xp-pts-next">30 pts to next level</div>
+        </div>
+      </div>
+
+      <!-- Achievements Section -->
+      <div class="achievements-section" id="achievements-section" aria-label="Your achievements">
+        <div class="section-header">
+          <h2 class="section-title">Achievements</h2>
+          <span class="section-count" id="achievements-count">—</span>
+        </div>
+        <div class="achievements-grid" id="achievements-grid" aria-live="polite">
+          <!-- Rendered by JS -->
         </div>
       </div>
 
@@ -378,6 +419,18 @@
           <span class="header-logo-name">Smart Citizen</span>
           <span class="header-logo-tag">Admin</span>
         </div>
+        <button class="theme-toggle" id="admin-theme-toggle" aria-label="Toggle dark mode"
+                onclick="App.toggleTheme()">
+          <svg class="icon-moon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+          </svg>
+          <svg class="icon-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+        </button>
         <div class="header-user">
           <button class="user-menu-btn" id="admin-menu-btn" aria-haspopup="true" aria-expanded="false"
                   onclick="App.toggleUserMenu('admin')">
@@ -763,6 +816,9 @@
       </div>
     </div>
   </div>
+
+  <!-- Floating XP container (used by JS) -->
+  <div id="xp-float-container" aria-hidden="true"></div>
 
   <!-- Scripts -->
   <script src="js/api.js"></script>

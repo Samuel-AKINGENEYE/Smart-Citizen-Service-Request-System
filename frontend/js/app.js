@@ -29,6 +29,173 @@ const state = {
 };
 
 /* ============================================================
+   THEME MANAGEMENT
+   ============================================================ */
+const Theme = {
+  KEY: 'scrs-theme',
+  init: function() {
+    var saved = localStorage.getItem(this.KEY) || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    this.apply(saved);
+  },
+  apply: function(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem(this.KEY, theme);
+  },
+  toggle: function() {
+    var current = document.documentElement.getAttribute('data-theme') || 'light';
+    this.apply(current === 'dark' ? 'light' : 'dark');
+  },
+};
+
+App.toggleTheme = function() { Theme.toggle(); };
+
+/* ============================================================
+   STREAK TRACKING
+   ============================================================ */
+var Streak = {
+  KEY_DATE:  'scrs-last-active',
+  KEY_COUNT: 'scrs-streak',
+  update: function() {
+    var today = new Date().toDateString();
+    var last  = localStorage.getItem(this.KEY_DATE);
+    var count = parseInt(localStorage.getItem(this.KEY_COUNT) || '0', 10);
+    if (!last) {
+      count = 1;
+    } else if (last === today) {
+      // same day — no change
+    } else {
+      var diff = (new Date(today) - new Date(last)) / (1000 * 60 * 60 * 24);
+      count = (diff <= 1) ? count + 1 : 1;
+    }
+    localStorage.setItem(this.KEY_DATE,  today);
+    localStorage.setItem(this.KEY_COUNT, String(count));
+    return count;
+  },
+  get: function() {
+    return parseInt(localStorage.getItem(this.KEY_COUNT) || '0', 10);
+  },
+  render: function() {
+    var count = this.get();
+    var badge = document.getElementById('streak-badge');
+    var text  = document.getElementById('streak-text');
+    if (!badge) return;
+    if (count >= 2) {
+      badge.style.display = '';
+      if (text) text.textContent = count + ' day streak';
+    } else {
+      badge.style.display = 'none';
+    }
+  },
+};
+
+/* ============================================================
+   ACHIEVEMENTS SYSTEM
+   ============================================================ */
+var ACHIEVEMENTS = [
+  { id: 'first_report',  name: 'First Report',    desc: 'Submitted first request',  emoji: '🌟', pts: 5,  type: 'requests', threshold: 1 },
+  { id: 'civic_5',       name: 'Civic Helper',     desc: '5 requests submitted',     emoji: '🏙️', pts: 15, type: 'requests', threshold: 5 },
+  { id: 'civic_10',      name: 'Urban Champion',   desc: '10 requests submitted',    emoji: '🏆', pts: 30, type: 'requests', threshold: 10 },
+  { id: 'rater',         name: 'Voice Heard',      desc: 'Rated a response',         emoji: '⭐', pts: 5,  type: 'rating',   threshold: 1 },
+  { id: 'level_2',       name: 'Engaged',          desc: 'Reached Level 2',          emoji: '📈', pts: 10, type: 'level',    threshold: 2 },
+  { id: 'level_3',       name: 'Active Citizen',   desc: 'Reached Level 3',          emoji: '🎖️', pts: 20, type: 'level',    threshold: 3 },
+  { id: 'level_5',       name: 'City Champion',    desc: 'Reached max level',        emoji: '👑', pts: 50, type: 'level',    threshold: 5 },
+  { id: 'streak_3',      name: 'Consistent',       desc: '3-day activity streak',    emoji: '🔥', pts: 10, type: 'streak',   threshold: 3 },
+  { id: 'streak_7',      name: 'Dedicated',        desc: '7-day activity streak',    emoji: '💪', pts: 25, type: 'streak',   threshold: 7 },
+];
+
+var Achievements = {
+  KEY: 'scrs-achievements',
+  getUnlocked: function() {
+    try { return JSON.parse(localStorage.getItem(this.KEY) || '[]'); }
+    catch (e) { return []; }
+  },
+  unlock: function(id) {
+    var unlocked = this.getUnlocked();
+    if (unlocked.indexOf(id) === -1) {
+      unlocked.push(id);
+      localStorage.setItem(this.KEY, JSON.stringify(unlocked));
+      return true;
+    }
+    return false;
+  },
+  check: function(context) {
+    var unlocked = this.getUnlocked();
+    var newOnes  = [];
+    var reqs     = (context.requests || 0);
+    var lvl      = (context.level   || 1);
+    var streak   = Streak.get();
+    var rated    = (context.rated   || 0);
+
+    ACHIEVEMENTS.forEach(function(a) {
+      if (unlocked.indexOf(a.id) > -1) return;
+      var earned = false;
+      if (a.type === 'requests' && reqs >= a.threshold) earned = true;
+      if (a.type === 'level'    && lvl  >= a.threshold) earned = true;
+      if (a.type === 'streak'   && streak >= a.threshold) earned = true;
+      if (a.type === 'rating'   && rated >= a.threshold) earned = true;
+      if (earned) { Achievements.unlock(a.id); newOnes.push(a); }
+    });
+    return newOnes;
+  },
+  render: function() {
+    var grid     = document.getElementById('achievements-grid');
+    var countEl  = document.getElementById('achievements-count');
+    if (!grid) return;
+    var unlocked = this.getUnlocked();
+    var total    = ACHIEVEMENTS.length;
+    var doneCount = unlocked.length;
+    if (countEl) countEl.textContent = doneCount + ' / ' + total;
+
+    grid.innerHTML = ACHIEVEMENTS.map(function(a) {
+      var isUnlocked = unlocked.indexOf(a.id) > -1;
+      return '<div class="achievement-card ' + (isUnlocked ? 'unlocked' : 'locked') + '"' +
+        ' title="' + escapeHtml(a.desc) + '">' +
+        (isUnlocked ? '<span class="achievement-unlocked-badge">✓</span>' : '') +
+        '<div class="achievement-emoji">' + a.emoji + '</div>' +
+        '<div class="achievement-name">' + escapeHtml(a.name) + '</div>' +
+        '<div class="achievement-desc">' + escapeHtml(a.desc) + '</div>' +
+        '<div class="achievement-pts">+' + a.pts + ' pts</div>' +
+      '</div>';
+    }).join('');
+  },
+};
+
+/* ============================================================
+   FLOATING XP ANIMATION
+   ============================================================ */
+function floatXP(amount, fromEl) {
+  var container = document.getElementById('xp-float-container');
+  if (!container) return;
+  var el = document.createElement('div');
+  el.className = 'xp-float';
+  el.textContent = '+' + amount + ' pts';
+  var rect = fromEl
+    ? fromEl.getBoundingClientRect()
+    : { left: window.innerWidth / 2, top: window.innerHeight / 2, width: 0, height: 0 };
+  el.style.left = (rect.left + rect.width / 2) + 'px';
+  el.style.top  = (rect.top  + rect.height / 2) + 'px';
+  document.body.appendChild(el);
+  setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 1600);
+}
+
+/* ============================================================
+   LEVEL-UP CELEBRATION
+   ============================================================ */
+function showLevelUp(levelInfo) {
+  var overlay = document.createElement('div');
+  overlay.className = 'levelup-overlay';
+  overlay.innerHTML =
+    '<div class="levelup-card">' +
+      '<div class="levelup-emoji">' + levelInfo.emoji + '</div>' +
+      '<div class="levelup-title">Level Up!</div>' +
+      '<div class="levelup-subtitle">You\'re now a <strong>' + escapeHtml(levelInfo.name) + '</strong></div>' +
+      '<div class="levelup-badge">Level ' + levelInfo.level + ' achieved</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+  setTimeout(function() { if (overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 3200);
+}
+
+/* ============================================================
    TOAST SYSTEM
    ============================================================ */
 const Toast = {
@@ -179,13 +346,21 @@ function getLevelInfo(points) {
   return GAMIFICATION_LEVELS[0];
 }
 
-function renderGamification(points) {
+function renderGamification(points, prevPoints) {
   var pts     = points || 0;
   var info    = getLevelInfo(pts);
   var nextLvl = GAMIFICATION_LEVELS[Math.min(info.level, GAMIFICATION_LEVELS.length - 1)];
   var progress = info.level >= 5 ? 100 :
     Math.round(((pts - info.minPts) / (nextLvl.minPts - info.minPts)) * 100);
   var toNext   = info.level >= 5 ? 0 : nextLvl.minPts - pts;
+
+  // Detect level-up (only when prevPoints was provided and level increased)
+  if (prevPoints !== undefined && prevPoints !== null) {
+    var prevInfo = getLevelInfo(prevPoints);
+    if (info.level > prevInfo.level) {
+      setTimeout(function() { showLevelUp(info); }, 300);
+    }
+  }
 
   // Header badge
   var hdrIcon   = document.getElementById('header-badge-icon');
@@ -194,12 +369,12 @@ function renderGamification(points) {
   if (hdrPoints) hdrPoints.textContent = pts + ' pts';
 
   // Level card
-  var lvlNum  = document.getElementById('xp-level-num');
+  var lvlNum    = document.getElementById('xp-level-num');
   var badgeName = document.getElementById('xp-badge-name');
-  var ptsVal  = document.getElementById('xp-pts-value');
-  var ptsNext = document.getElementById('xp-pts-next');
-  var progBar = document.getElementById('xp-progress-bar');
-  var avatar  = document.getElementById('xp-avatar-emoji');
+  var ptsVal    = document.getElementById('xp-pts-value');
+  var ptsNext   = document.getElementById('xp-pts-next');
+  var progBar   = document.getElementById('xp-progress-bar');
+  var avatar    = document.getElementById('xp-avatar-emoji');
 
   if (lvlNum)    lvlNum.textContent    = info.level;
   if (badgeName) badgeName.textContent = info.name;
@@ -207,6 +382,9 @@ function renderGamification(points) {
   if (avatar)    avatar.textContent    = info.emoji;
   if (ptsNext)   ptsNext.textContent   = info.level >= 5 ? 'Max level reached! 🏆' : toNext + ' pts to next level';
   if (progBar)   progBar.style.width   = progress + '%';
+
+  // Streak
+  Streak.render();
 }
 
 /* ============================================================
@@ -495,8 +673,10 @@ function initCitizenView() {
   var uname  = (state.user && state.user.full_name) || (state.user && state.user.email) || '';
   if (avatar) avatar.textContent = getInitials(uname);
   if (nameEl) nameEl.textContent = uname;
-  // Render gamification from login data immediately
+  // Update streak and render gamification from login data immediately
+  Streak.update();
   renderGamification((state.user && state.user.points) || 0);
+  Achievements.render();
   loadCitizenData();
 }
 
@@ -508,9 +688,18 @@ function loadCitizenData() {
   ]).then(function(results) {
     state.myRequests = results[0].requests || [];
     var profile = results[1].user;
-    if (profile) renderGamification(profile.points || 0);
+    if (profile) {
+      var newPts = profile.points || 0;
+      if (state.user) state.user.points = newPts;
+      renderGamification(newPts);
+    }
     renderCitizenStats();
     renderCitizenRequests(null);
+    // Check level-based achievements after data loads
+    var pts = (state.user && state.user.points) || 0;
+    var ratedCount = state.myRequests.filter(function(r) { return r.my_rating; }).length;
+    Achievements.check({ requests: state.myRequests.length, level: getLevelInfo(pts).level, rated: ratedCount });
+    Achievements.render();
   });
 }
 
@@ -623,6 +812,7 @@ function renderCitizenRequests(newRefNum) {
 
     return '<div class="request-card' + (isNew ? ' highlight' : '') + '"' +
       ' tabindex="0" role="button"' +
+      ' data-status="' + escapeHtml(req.status || 'open') + '"' +
       ' aria-label="Request: ' + escapeHtml(req.title) + ', Status: ' + (req.status || 'open') + '"' +
       ' onclick="App.toggleRequestCard(this)"' +
       ' onkeydown="if(event.key===\'Enter\'||event.key===\' \')App.toggleRequestCard(this)">' +
@@ -716,6 +906,21 @@ App.submitRating = function() {
     .then(function() {
       Toast.show('Thank you! ⭐', 'Your feedback earns you +5 civic points.', 'success');
       App.closeRatingModal();
+
+      // Float XP and update gamification optimistically
+      floatXP(5, document.getElementById('header-xp'));
+      var currentPts = (state.user && state.user.points) || 0;
+      var newPts     = currentPts + 5;
+      if (state.user) state.user.points = newPts;
+      renderGamification(newPts, currentPts);
+
+      // Check rating achievement
+      var newAchievements = Achievements.check({ requests: state.myRequests.length, level: getLevelInfo(newPts).level, rated: 1 });
+      newAchievements.forEach(function(a) {
+        Toast.show('Achievement unlocked! ' + a.emoji, a.name + ' — ' + a.desc, 'success');
+      });
+      Achievements.render();
+
       // Refresh citizen data to update rating display
       loadCitizenData();
     })
@@ -1587,10 +1792,26 @@ function submitRequest() {
       };
       state.myRequests.unshift(optimistic);
 
-      // Update gamification optimistically
+      // Update gamification optimistically with level-up detection
       var currentPts = (state.user && state.user.points) || 0;
-      if (state.user) state.user.points = currentPts + 10;
-      renderGamification(currentPts + 10);
+      var newPts     = currentPts + 10;
+      if (state.user) state.user.points = newPts;
+      renderGamification(newPts, currentPts);
+
+      // Float XP from header badge
+      floatXP(10, document.getElementById('header-xp'));
+
+      // Update streak and check achievements
+      Streak.update();
+      var newAchievements = Achievements.check({
+        requests: state.myRequests.length,
+        level:    getLevelInfo(newPts).level,
+        rated:    0,
+      });
+      newAchievements.forEach(function(a) {
+        Toast.show('Achievement unlocked! ' + a.emoji, a.name + ' — ' + a.desc, 'success');
+      });
+      Achievements.render();
 
       renderCitizenStats();
       renderCitizenRequests(ref);
@@ -1608,6 +1829,9 @@ function submitRequest() {
    INIT
    ============================================================ */
 document.addEventListener('DOMContentLoaded', function() {
+  // Initialize theme immediately
+  Theme.init();
+
   var signinForm   = document.getElementById('signin-form');
   var registerForm = document.getElementById('register-form');
   if (signinForm)   signinForm.addEventListener('submit',   handleSignIn);
