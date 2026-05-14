@@ -32,6 +32,8 @@ const state = {
   adminStatusFilter: '',
   adminCategoryFilter: '',
   selectedRequestId: null,
+  lightboxAttachments: [],
+  lightboxIndex: 0,
 };
 
 /* ============================================================
@@ -200,6 +202,45 @@ var Validator = {
 };
 
 /* ============================================================
+   SOCIAL LOGIN
+   ============================================================ */
+App.socialLogin = function(provider) {
+  var labels = { google: 'Google', apple: 'Apple', facebook: 'Facebook', twitter: 'X (Twitter)' };
+  Toast.show('Coming soon', (labels[provider] || provider) + ' login will be available soon.', 'info');
+};
+
+/* ============================================================
+   RESEND OTP
+   ============================================================ */
+App.resendOtp = function() {
+  var otpInput = document.getElementById('otp-input');
+  var email    = otpInput ? otpInput.dataset.email : '';
+  if (!email) {
+    Toast.show('Error', 'Email not found. Please go back and try again.', 'error');
+    return;
+  }
+
+  var resendBtn = document.getElementById('resend-btn');
+  if (resendBtn) { resendBtn.disabled = true; resendBtn.textContent = 'Sending…'; }
+
+  API.auth.resendOtp(email)
+    .then(function() {
+      Toast.show('Code resent', 'Check your email for a new verification code.', 'success');
+    })
+    .catch(function(err) {
+      Toast.show('Failed to resend', err.message || 'Please try again shortly.', 'error');
+    })
+    .finally(function() {
+      if (resendBtn) {
+        setTimeout(function() {
+          resendBtn.disabled    = false;
+          resendBtn.textContent = 'Resend';
+        }, 30000);
+      }
+    });
+};
+
+/* ============================================================
    PASSWORD TOGGLE
    ============================================================ */
 App.togglePassword = function(inputId, btn) {
@@ -320,12 +361,14 @@ function handleRegister(e) {
   setButtonLoading('register-btn', true);
   hideError('register-error');
 
-  API.auth.register(nameEl.value.trim(), emailEl.value.trim(), phoneEl.value.trim(), pwEl.value)
-    .then(function(data) {
-      var otpDisplay = document.getElementById('otp-display');
-      if (otpDisplay && data.otp) otpDisplay.textContent = data.otp;
+  var registeredEmail = emailEl.value.trim();
+  API.auth.register(nameEl.value.trim(), registeredEmail, phoneEl.value.trim(), pwEl.value)
+    .then(function() {
       var otpInput = document.getElementById('otp-input');
-      if (otpInput) otpInput.dataset.email = emailEl.value.trim();
+      if (otpInput) { otpInput.dataset.email = registeredEmail; otpInput.value = ''; }
+      var otpEmailDisplay = document.getElementById('otp-email-display');
+      if (otpEmailDisplay) otpEmailDisplay.textContent = registeredEmail;
+      Toast.show('Account created!', 'A verification code was sent to your email.', 'success');
       App.switchAuthTab('otp');
     })
     .catch(function(err) {
@@ -750,73 +793,326 @@ App.updateStatus = function(id, newStatus, selectEl) {
       if (reqF) reqF.status = newStatus;
       renderAdminStats();
       Toast.show('Status updated', 'Moved to "' + (STATUS_LABELS[newStatus] || newStatus) + '"', 'success');
-      if (state.selectedRequestId === id) App.openSidePanel(id);
+      // Sync panel status elements without full re-render
+      if (state.selectedRequestId === id) {
+        var panelSel = document.getElementById('panel-status-select');
+        if (panelSel) { panelSel.value = newStatus; panelSel.className = 'status-select status-' + newStatus; }
+        var panelBadge = document.getElementById('panel-status-badge');
+        if (panelBadge) panelBadge.outerHTML = '<span id="panel-status-badge">' + statusBadge(newStatus) + '</span>';
+      }
     })
     .catch(function(err) {
       Toast.show('Update failed', err.message, 'error');
     });
 };
 
+/* ---- Priority update ---- */
+App.updatePriority = function(id, newPriority, selectEl) {
+  selectEl.className = 'priority-select priority-' + newPriority;
+  API.admin.updatePriority(id, newPriority, state.token)
+    .then(function() {
+      var req = state.adminRequests.find(function(r) { return r.id === id; });
+      if (req) req.priority = newPriority;
+      var reqF = state.adminFiltered.find(function(r) { return r.id === id; });
+      if (reqF) reqF.priority = newPriority;
+      renderAdminTable();
+      Toast.show('Priority updated', 'Changed to "' + newPriority.charAt(0).toUpperCase() + newPriority.slice(1) + '"', 'success');
+    })
+    .catch(function(err) {
+      Toast.show('Update failed', err.message, 'error');
+    });
+};
+
+/* ---- Admin note ---- */
+App.saveAdminNote = function(id) {
+  var textarea = document.getElementById('panel-note');
+  var note = textarea ? textarea.value.trim() : '';
+  if (!note) {
+    Toast.show('Note is empty', 'Write a note or comment before saving.', 'warning');
+    return;
+  }
+  setButtonLoading('save-note-btn', true);
+  API.admin.addNote(id, note, state.token)
+    .then(function() {
+      Toast.show('Note saved', 'Admin note added to this case.', 'success');
+      if (textarea) textarea.value = '';
+    })
+    .catch(function(err) {
+      Toast.show('Save failed', err.message || 'Could not save note.', 'error');
+    })
+    .finally(function() {
+      setButtonLoading('save-note-btn', false);
+    });
+};
+
 /* ---- Side panel ---- */
 App.openSidePanel = function(id) {
   state.selectedRequestId = id;
-  var req = state.adminRequests.find(function(r) { return r.id === id; }) ||
-            state.adminFiltered.find(function(r) { return r.id === id; });
-  if (!req) return;
+  var cached = state.adminRequests.find(function(r) { return r.id === id; }) ||
+               state.adminFiltered.find(function(r)  { return r.id === id; });
+  if (!cached) return;
 
-  var panel = document.getElementById('admin-side-panel');
-  var body  = document.getElementById('panel-body');
-  var ref   = document.getElementById('panel-ref');
+  var panel    = document.getElementById('admin-side-panel');
+  var body     = document.getElementById('panel-body');
+  var panelRef = document.getElementById('panel-ref');
+  var subtitle = document.getElementById('panel-subtitle');
   if (!panel || !body) return;
 
   panel.classList.remove('hidden');
-  if (ref) ref.textContent = req.reference_number || 'Request Details';
+  if (panelRef) panelRef.textContent = cached.reference_number || 'Request Details';
+  if (subtitle) subtitle.textContent = cached.title || '';
 
-  var meta = getCategoryMeta(req.category_name || '');
-  body.innerHTML =
-    '<div class="panel-row">' +
-      '<div class="panel-row-label">Category</div>' +
-      '<div class="panel-row-value"><span aria-hidden="true">' + meta.emoji + '</span> ' + escapeHtml(req.category_name || '—') + '</div>' +
-    '</div>' +
-    '<div class="panel-row">' +
-      '<div class="panel-row-label">Title</div>' +
-      '<div class="panel-row-value font-semibold">' + escapeHtml(req.title || '—') + '</div>' +
-    '</div>' +
-    '<div class="panel-row">' +
-      '<div class="panel-row-label">Status</div>' +
-      '<div class="panel-row-value">' + statusBadge(req.status) + '</div>' +
-    '</div>' +
-    '<div class="panel-row">' +
-      '<div class="panel-row-label">Priority</div>' +
-      '<div class="panel-row-value">' + priorityBadge(req.priority) + '</div>' +
-    '</div>' +
-    '<div class="panel-row">' +
-      '<div class="panel-row-label">Citizen</div>' +
-      '<div class="panel-row-value">' + escapeHtml(req.citizen_name || '—') + '</div>' +
-    '</div>' +
-    (req.location_address ?
-      '<div class="panel-row"><div class="panel-row-label">Location</div><div class="panel-row-value">📍 ' + escapeHtml(req.location_address) + '</div></div>' : '') +
-    '<div class="panel-row">' +
-      '<div class="panel-row-label">Submitted</div>' +
-      '<div class="panel-row-value">' + formatDate(req.created_at) + '</div>' +
-    '</div>' +
-    '<div class="panel-row">' +
-      '<div class="panel-row-label">Description</div>' +
-      '<div class="panel-desc">' + escapeHtml(req.description || 'No description provided.') + '</div>' +
-    '</div>';
+  body.innerHTML = _panelSkeleton();
 
   document.querySelectorAll('#admin-tbody tr').forEach(function(tr) {
     tr.classList.toggle('selected', Number(tr.dataset.id) === id);
   });
+
+  API.admin.getRequestDetail(id, state.token)
+    .then(function(data) {
+      var full = Object.assign({}, cached, data.request || data);
+      _renderPanelContent(body, full);
+    })
+    .catch(function() {
+      _renderPanelContent(body, cached);
+    });
+};
+
+App.refreshPanel = function() {
+  if (state.selectedRequestId) App.openSidePanel(state.selectedRequestId);
 };
 
 App.closeSidePanel = function() {
-  state.selectedRequestId = null;
+  state.selectedRequestId    = null;
+  state.lightboxAttachments  = [];
   var panel = document.getElementById('admin-side-panel');
   if (panel) panel.classList.add('hidden');
   document.querySelectorAll('#admin-tbody tr').forEach(function(tr) {
     tr.classList.remove('selected');
   });
+};
+
+/* ---- Panel helpers ---- */
+function _panelSkeleton() {
+  return '<div class="panel-section">' +
+    '<div class="skeleton skel-title" style="width:55%;margin-bottom:10px"></div>' +
+    '<div class="skeleton skel-title" style="width:80%;margin-bottom:10px"></div>' +
+    '<div style="display:flex;gap:6px"><div class="skeleton skel-badge"></div><div class="skeleton skel-badge"></div></div>' +
+  '</div>' +
+  '<div class="panel-section">' +
+    '<div class="skeleton skel-text" style="width:40%;margin-bottom:14px"></div>' +
+    '<div class="skeleton skel-text" style="width:100%;margin-bottom:8px"></div>' +
+    '<div class="skeleton skel-text" style="width:100%;margin-bottom:8px"></div>' +
+    '<div class="skeleton skel-text" style="width:75%"></div>' +
+  '</div>' +
+  '<div class="panel-section">' +
+    '<div class="skeleton skel-text" style="width:35%;margin-bottom:14px"></div>' +
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">' +
+      '<div class="skeleton" style="aspect-ratio:1;border-radius:8px"></div>' +
+      '<div class="skeleton" style="aspect-ratio:1;border-radius:8px"></div>' +
+      '<div class="skeleton" style="aspect-ratio:1;border-radius:8px"></div>' +
+    '</div>' +
+  '</div>';
+}
+
+function _panelInfoRow(icon, label, value) {
+  if (!value) return '';
+  return '<div class="panel-info-row">' +
+    '<div class="panel-info-icon" aria-hidden="true">' + icon + '</div>' +
+    '<div><div class="panel-info-label">' + label + '</div>' +
+         '<div class="panel-info-value">' + escapeHtml(value) + '</div></div>' +
+  '</div>';
+}
+
+function _renderPanelContent(container, req) {
+  var meta        = getCategoryMeta(req.category_name || '');
+  var attachments = req.attachments || [];
+  var timeline    = req.timeline    || [];
+  state.lightboxAttachments = attachments;
+
+  var html = '';
+
+  /* ---- Section 1: Case header ---- */
+  html += '<div class="panel-section">' +
+    '<div class="panel-case-header">' +
+      '<span class="panel-ref-chip">' + escapeHtml(req.reference_number || '—') + '</span>' +
+      '<div class="panel-title-text">' + escapeHtml(req.title || '—') + '</div>' +
+      '<div class="panel-badges">' +
+        '<span id="panel-status-badge">' + statusBadge(req.status) + '</span>' +
+        priorityBadge(req.priority) +
+      '</div>' +
+    '</div>' +
+  '</div>';
+
+  /* ---- Section 2: Issue details ---- */
+  html += '<div class="panel-section">' +
+    '<div class="panel-section-title">Issue Details</div>' +
+    '<div class="panel-info-grid">' +
+      _panelInfoRow(meta.emoji, 'Category', req.category_name) +
+      _panelInfoRow('📍', 'Location', req.location_address) +
+      _panelInfoRow('📅', 'Submitted', formatDate(req.created_at)) +
+    '</div>' +
+  '</div>';
+
+  /* ---- Section 3: Full description ---- */
+  html += '<div class="panel-section">' +
+    '<div class="panel-section-title">Description</div>' +
+    '<div class="panel-desc-full">' + escapeHtml(req.description || 'No description provided.') + '</div>' +
+  '</div>';
+
+  /* ---- Section 4: Citizen info ---- */
+  html += '<div class="panel-section">' +
+    '<div class="panel-section-title">Citizen</div>' +
+    '<div class="panel-info-grid">' +
+      _panelInfoRow('👤', 'Name',  req.citizen_name  || req.full_name) +
+      _panelInfoRow('✉️', 'Email', req.citizen_email || req.email) +
+      _panelInfoRow('📞', 'Phone', req.citizen_phone || req.phone) +
+    '</div>' +
+  '</div>';
+
+  /* ---- Section 5: Attachments ---- */
+  var attachCount = attachments.length;
+  html += '<div class="panel-section">' +
+    '<div class="panel-section-title">Attachments' +
+      (attachCount ? ' <span class="attach-count">' + attachCount + '</span>' : '') +
+    '</div>' +
+    '<div class="attachment-gallery">';
+
+  if (attachCount === 0) {
+    html += '<div class="attach-no-images">📷 No images attached to this request</div>';
+  } else {
+    attachments.forEach(function(att, idx) {
+      var url  = att.file_url || att.url || String(att);
+      var name = escapeHtml(att.file_name || att.name || ('Image ' + (idx + 1)));
+      html += '<div class="attach-thumb" role="button" tabindex="0"' +
+        ' aria-label="View ' + name + '"' +
+        ' onclick="App.openLightbox(' + idx + ')"' +
+        ' onkeydown="if(event.key===\'Enter\'||event.key===\' \')App.openLightbox(' + idx + ')">' +
+        '<img src="' + escapeHtml(url) + '" alt="' + name + '" loading="lazy">' +
+        '<div class="attach-overlay" aria-hidden="true">🔍</div>' +
+      '</div>';
+    });
+  }
+  html += '</div></div>';
+
+  /* ---- Section 6: Activity timeline ---- */
+  if (timeline.length) {
+    html += '<div class="panel-section">' +
+      '<div class="panel-section-title">Activity</div>' +
+      '<div class="timeline">';
+    timeline.forEach(function(item) {
+      var dotClass = 'timeline-dot';
+      if (item.new_status === 'resolved')    dotClass += ' dot-resolved';
+      else if (item.new_status === 'rejected') dotClass += ' dot-rejected';
+      else if (item.new_status === 'open')     dotClass += ' dot-open';
+      else if (!item.new_status)               dotClass += ' dot-created';
+      html += '<div class="timeline-item">' +
+        '<div class="timeline-spine"><div class="' + dotClass + '"></div><div class="timeline-line"></div></div>' +
+        '<div class="timeline-content">' +
+          '<div class="timeline-action">' + escapeHtml(item.action || 'Update') + '</div>' +
+          '<div class="timeline-meta">' +
+            (item.actor_name ? escapeHtml(item.actor_name) + ' · ' : '') +
+            formatDate(item.created_at) +
+          '</div>' +
+          (item.comment ? '<div class="timeline-note">"' + escapeHtml(item.comment) + '"</div>' : '') +
+        '</div>' +
+      '</div>';
+    });
+    html += '</div></div>';
+  }
+
+  /* ---- Section 7: Admin actions ---- */
+  html += '<div class="panel-section">' +
+    '<div class="panel-section-title">Admin Actions</div>' +
+    '<div class="admin-action-card">' +
+
+      '<div class="admin-action-row">' +
+        '<div class="select-wrap">' +
+          '<select id="panel-status-select" class="status-select status-' + (req.status || 'open') + '"' +
+            ' aria-label="Update status" onchange="App.updateStatus(' + req.id + ', this.value, this)">' +
+            '<option value="open"'        + (req.status === 'open'        ? ' selected' : '') + '>Open</option>' +
+            '<option value="in_progress"' + (req.status === 'in_progress' ? ' selected' : '') + '>In Progress</option>' +
+            '<option value="resolved"'    + (req.status === 'resolved'    ? ' selected' : '') + '>Resolved</option>' +
+            '<option value="rejected"'    + (req.status === 'rejected'    ? ' selected' : '') + '>Rejected</option>' +
+          '</select>' +
+        '</div>' +
+        '<div class="select-wrap">' +
+          '<select id="panel-priority-select" class="priority-select priority-' + (req.priority || 'medium') + '"' +
+            ' aria-label="Update priority" onchange="App.updatePriority(' + req.id + ', this.value, this)">' +
+            '<option value="low"'    + (req.priority === 'low'    ? ' selected' : '') + '>Low</option>' +
+            '<option value="medium"' + (req.priority === 'medium' ? ' selected' : '') + '>Medium</option>' +
+            '<option value="high"'   + (req.priority === 'high'   ? ' selected' : '') + '>High</option>' +
+            '<option value="urgent"' + (req.priority === 'urgent' ? ' selected' : '') + '>Urgent</option>' +
+          '</select>' +
+        '</div>' +
+      '</div>' +
+
+      '<div>' +
+        '<label for="panel-note" class="panel-note-label">Admin Note / Resolution Comment</label>' +
+        '<textarea id="panel-note" class="panel-note-textarea"' +
+          ' placeholder="Add a resolution note, internal comment, or next steps…"' +
+          ' aria-label="Admin note"></textarea>' +
+      '</div>' +
+
+      '<button class="btn btn-primary btn-full" id="save-note-btn"' +
+        ' onclick="App.saveAdminNote(' + req.id + ')">' +
+        '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true" style="flex-shrink:0"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>' +
+        '<span class="btn-text">Save Note</span>' +
+        '<span class="btn-spinner hidden" aria-hidden="true"></span>' +
+      '</button>' +
+
+    '</div>' +
+  '</div>';
+
+  container.innerHTML = html;
+}
+
+/* ============================================================
+   LIGHTBOX
+   ============================================================ */
+App.openLightbox = function(index) {
+  var attachments = state.lightboxAttachments;
+  if (!attachments || !attachments.length) return;
+
+  state.lightboxIndex = index;
+  var att  = attachments[index];
+  var url  = att.file_url || att.url || String(att);
+  var name = att.file_name || att.name || ('Image ' + (index + 1));
+
+  var lightbox = document.getElementById('lightbox');
+  var img      = document.getElementById('lightbox-img');
+  var caption  = document.getElementById('lightbox-caption');
+  var counter  = document.getElementById('lightbox-counter');
+  var prevBtn  = document.getElementById('lightbox-prev');
+  var nextBtn  = document.getElementById('lightbox-next');
+  if (!lightbox || !img) return;
+
+  img.src = url;
+  img.alt = name;
+  if (caption) caption.textContent = name;
+  if (counter) counter.textContent = (index + 1) + ' / ' + attachments.length;
+  if (prevBtn) prevBtn.disabled = index === 0;
+  if (nextBtn) nextBtn.disabled = index === attachments.length - 1;
+
+  lightbox.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  var closeBtn = document.getElementById('lightbox-close-btn');
+  if (closeBtn) closeBtn.focus();
+};
+
+App.closeLightbox = function() {
+  var lightbox = document.getElementById('lightbox');
+  if (lightbox) lightbox.classList.add('hidden');
+  document.body.style.overflow = '';
+};
+
+App.lightboxPrev = function() {
+  if (state.lightboxIndex > 0) App.openLightbox(state.lightboxIndex - 1);
+};
+
+App.lightboxNext = function() {
+  if (state.lightboxIndex < state.lightboxAttachments.length - 1)
+    App.openLightbox(state.lightboxIndex + 1);
 };
 
 function populateAdminCategoryFilter() {
@@ -880,13 +1176,26 @@ document.addEventListener('DOMContentLoaded', function() {
       if (e.target === modalOverlay) App.closeRequestModal();
     });
   }
+  var lightbox = document.getElementById('lightbox');
+  if (lightbox) {
+    lightbox.addEventListener('click', function(e) {
+      if (e.target === lightbox) App.closeLightbox();
+    });
+  }
 });
 
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
+    var lightbox = document.getElementById('lightbox');
+    if (lightbox && !lightbox.classList.contains('hidden')) {
+      App.closeLightbox();
+      return;
+    }
     App.closeRequestModal();
     App.closeSidePanel();
   }
+  if (e.key === 'ArrowLeft')  App.lightboxPrev();
+  if (e.key === 'ArrowRight') App.lightboxNext();
 });
 
 /* ============================================================

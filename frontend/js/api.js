@@ -52,6 +52,10 @@ const auth = {
   async verifyOtp(email, otp) {
     return _request('POST', '/auth/verify-otp', { email, otp });
   },
+
+  async resendOtp(email) {
+    return _request('POST', '/auth/resend-otp', { email });
+  },
 };
 
 /* ============================================================
@@ -97,8 +101,20 @@ const admin = {
     return _request('GET', '/admin/requests', null, token);
   },
 
+  async getRequestDetail(id, token) {
+    return _request('GET', `/admin/requests/${id}`, null, token);
+  },
+
   async updateStatus(id, status, token) {
     return _request('PUT', `/admin/requests/${id}/status`, { status }, token);
+  },
+
+  async updatePriority(id, priority, token) {
+    return _request('PUT', `/admin/requests/${id}/priority`, { priority }, token);
+  },
+
+  async addNote(id, note, token) {
+    return _request('POST', `/admin/requests/${id}/notes`, { note }, token);
   },
 };
 
