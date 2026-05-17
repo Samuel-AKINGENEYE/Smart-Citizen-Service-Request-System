@@ -800,7 +800,7 @@ function renderCitizenRequests(newRefNum) {
       confirmHtml = '<div class="req-confirm-expired">Confirmation window expired on ' + formatDateTime(req.review_deadline) + '</div>';
     }
 
-    var descPreview = req.description
+    var descPreview = req.description != null
       ? escapeHtml(req.description.length > 90 ? req.description.slice(0, 90) + '…' : req.description)
       : '';
 
@@ -1310,7 +1310,7 @@ function _renderPanelContent(container, req) {
   /* Section 3: Description */
   html += '<div class="panel-section">' +
     '<div class="panel-section-title">Description</div>' +
-    '<div class="panel-desc-full">' + escapeHtml(req.description || 'No description provided.') + '</div>' +
+    '<div class="panel-desc-full">' + escapeHtml(req.description != null ? req.description : 'No description provided.') + '</div>' +
   '</div>';
 
   /* Section 4: Citizen info */
@@ -1807,13 +1807,13 @@ function submitRequest() {
       App.closeRequestModal();
       Toast.show('Request submitted! 🎉', 'Reference: ' + ref + ' — You earned +10 civic points!', 'success');
 
-      var optimistic = {
+      var requestItem = data.request || {
         id: Date.now(), reference_number: ref, title: f.title, description: f.description,
         location_address: f.location, priority: f.priority, status: 'open',
         category_id: f.categoryId, category_name: f.categoryName,
         created_at: new Date().toISOString(), attachments: [], responses: [], my_rating: null,
       };
-      state.myRequests.unshift(optimistic);
+      state.myRequests.unshift(requestItem);
 
       // Update gamification optimistically with level-up detection
       var currentPts = (state.user && state.user.points) || 0;
@@ -1839,10 +1839,8 @@ function submitRequest() {
       renderCitizenStats();
       renderCitizenRequests(ref);
 
-      // Background refresh after a delay
-      setTimeout(function() {
-        loadCitizenData();
-      }, 2500);
+      // Refresh the request list from the server to ensure full details are shown
+      loadCitizenData();
     })
     .catch(function(err) { Toast.show('Submission failed', err.message || 'Please try again.', 'error'); })
     .finally(function() { setButtonLoading('modal-next-btn', false); });

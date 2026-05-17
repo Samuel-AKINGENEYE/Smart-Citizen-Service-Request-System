@@ -354,7 +354,31 @@ app.post('/api/requests', authenticateToken, upload.array('attachments', 5), asy
     // Gamification: +10 pts for submitting
     await awardPoints(citizenId, 10, 'Submitted a request');
 
-    res.status(201).json({ success: true, message: 'Request submitted successfully', request_id: reqId, reference_number: refNum });
+    const [createdRequest] = await q(
+      `SELECT r.id, r.reference_number, r.title, r.description, r.status, r.priority,
+              r.location_address, r.created_at, r.updated_at, r.resolved_at,
+              r.citizen_confirmed, r.citizen_confirmed_at, r.review_deadline,
+              c.name AS category_name, c.id AS category_id
+       FROM requests r
+       LEFT JOIN categories c ON r.category_id = c.id
+       WHERE r.id = ?`,
+      [reqId]
+    );
+    if (createdRequest) {
+      createdRequest.attachments = await q(
+        'SELECT id, file_url, file_name, file_size FROM request_attachments WHERE request_id = ?',
+        [reqId]
+      );
+      createdRequest.responses = [];
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Request submitted successfully',
+      request_id: reqId,
+      reference_number: refNum,
+      request: createdRequest || null,
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }

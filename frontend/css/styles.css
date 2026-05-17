@@ -2007,6 +2007,45 @@ input[type="password"] { padding-right: 42px; }
   gap: 16px;
   box-shadow: 0 4px 20px rgba(79,70,229,.25);
 }
+.landing-banner {
+  background: rgba(15, 118, 171, 0.08);
+  border: 1px solid rgba(15, 118, 171, 0.18);
+  border-radius: 24px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+.landing-copy {
+  max-width: 780px;
+}
+.landing-eyebrow {
+  display: inline-block;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #0f4d7d;
+  margin-bottom: 12px;
+}
+.landing-title {
+  font-size: clamp(1.8rem, 2.6vw, 2.35rem);
+  line-height: 1.08;
+  margin-bottom: 14px;
+  color: var(--text-primary);
+}
+.landing-description {
+  font-size: 1rem;
+  line-height: 1.75;
+  color: var(--text-secondary);
+  margin-bottom: 18px;
+}
+.landing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.landing-actions .btn-lg {
+  padding: 14px 20px;
+}
 .xp-level-left {
   display: flex;
   align-items: center;
