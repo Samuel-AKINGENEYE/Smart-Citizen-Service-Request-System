@@ -426,6 +426,120 @@ app.get('/api/requests/my-requests', authenticateToken, async (req, res) => {
   }
 });
 
+app.get('/api/requests/:id', authenticateToken, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const citizenId = req.user.userId;
+    const [row] = await q(
+      `SELECT r.id, r.reference_number, r.title, r.description, r.status, r.priority,
+              r.location_address, r.created_at, r.updated_at, r.resolved_at,
+              r.citizen_confirmed, r.citizen_confirmed_at, r.review_deadline,
+              c.name AS category_name, c.id AS category_id
+       FROM requests r
+       LEFT JOIN categories c ON r.category_id = c.id
+       WHERE r.id = ? AND r.citizen_id = ?`,
+      [id, citizenId]
+    );
+    if (!row) return res.status(404).json({ success: false, message: 'Request not found' });
+
+    row.attachments = await q(
+      'SELECT id, file_url, file_name, file_size FROM request_attachments WHERE request_id = ?',
+      [id]
+    );
+    row.responses = await q(
+      `SELECT rr.id, rr.message, rr.created_at, u.full_name AS admin_name
+       FROM request_responses rr
+       JOIN users u ON rr.admin_id = u.id
+       WHERE rr.request_id = ? AND rr.is_public = 1
+       ORDER BY rr.created_at ASC`,
+      [id]
+    );
+    const [rating] = await q(
+      'SELECT rating, feedback FROM request_ratings WHERE request_id = ? AND citizen_id = ?',
+      [id, citizenId]
+    );
+    row.my_rating = rating || null;
+
+    res.json({ success: true, request: row });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.put('/api/requests/:id', authenticateToken, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const citizenId = req.user.userId;
+    const { category_id, title, description, location_address, priority } = req.body;
+    if (!title || !description)
+      return res.status(400).json({ success: false, message: 'Title and description are required' });
+
+    const [existing] = await q('SELECT citizen_id, status FROM requests WHERE id = ?', [id]);
+    if (!existing) return res.status(404).json({ success: false, message: 'Request not found' });
+    if (existing.citizen_id !== citizenId)
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    if (existing.status === 'resolved' || existing.status === 'rejected')
+      return res.status(400).json({ success: false, message: 'Cannot edit a closed request' });
+
+    await q(
+      'UPDATE requests SET category_id = ?, title = ?, description = ?, location_address = ?, priority = ?, updated_at = NOW() WHERE id = ?',
+      [category_id || null, title.trim(), description.trim(), location_address?.trim() || null, priority || 'medium', id]
+    );
+
+    const [updated] = await q(
+      `SELECT r.id, r.reference_number, r.title, r.description, r.status, r.priority,
+              r.location_address, r.created_at, r.updated_at, r.resolved_at,
+              r.citizen_confirmed, r.citizen_confirmed_at, r.review_deadline,
+              c.name AS category_name, c.id AS category_id
+       FROM requests r
+       LEFT JOIN categories c ON r.category_id = c.id
+       WHERE r.id = ?`,
+      [id]
+    );
+    if (updated) {
+      updated.attachments = await q(
+        'SELECT id, file_url, file_name, file_size FROM request_attachments WHERE request_id = ?',
+        [id]
+      );
+      updated.responses = await q(
+        `SELECT rr.id, rr.message, rr.created_at, u.full_name AS admin_name
+         FROM request_responses rr
+         JOIN users u ON rr.admin_id = u.id
+         WHERE rr.request_id = ? AND rr.is_public = 1
+         ORDER BY rr.created_at ASC`,
+        [id]
+      );
+    }
+
+    res.json({ success: true, request: updated || null });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.delete('/api/requests/:id', authenticateToken, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const citizenId = req.user.userId;
+    const [existing] = await q('SELECT citizen_id, status FROM requests WHERE id = ?', [id]);
+    if (!existing) return res.status(404).json({ success: false, message: 'Request not found' });
+    if (existing.citizen_id !== citizenId)
+      return res.status(403).json({ success: false, message: 'Unauthorized' });
+    if (existing.status === 'resolved' || existing.status === 'rejected')
+      return res.status(400).json({ success: false, message: 'Cannot delete a closed request' });
+
+    await q('DELETE FROM request_attachments WHERE request_id = ?', [id]);
+    await q('DELETE FROM request_timeline WHERE request_id = ?', [id]);
+    await q('DELETE FROM request_responses WHERE request_id = ?', [id]);
+    await q('DELETE FROM request_ratings WHERE request_id = ?', [id]);
+    await q('DELETE FROM requests WHERE id = ?', [id]);
+
+    res.json({ success: true, message: 'Request deleted' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // Confirm request submission details (within 24 hours)
 app.post('/api/requests/:id/confirm', authenticateToken, async (req, res) => {
   try {

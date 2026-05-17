@@ -97,6 +97,14 @@ const requests = {
     return data;
   },
 
+  async update(id, body, token) {
+    return _request('PUT', `/requests/${id}`, body, token);
+  },
+
+  async remove(id, token) {
+    return _request('DELETE', `/requests/${id}`, null, token);
+  },
+
   async confirm(id, token) {
     return _request('POST', `/requests/${id}/confirm`, null, token);
   },

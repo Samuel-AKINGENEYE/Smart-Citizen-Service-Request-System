@@ -13,6 +13,7 @@ const state = {
   adminRequests: [],
   adminFiltered: [],
   adminStats: null,
+  editingRequestId: null,
   form: { step: 1, categoryId: null, categoryName: '', title: '', description: '', location: '', priority: 'medium', photos: [] },
   adminSortCol: 'created_at',
   adminSortDir: 'desc',
@@ -22,28 +23,19 @@ const state = {
   adminStatusFilter: '',
   adminCategoryFilter: '',
   selectedRequestId: null,
-  lightboxAttachments: [],
-  lightboxIndex: 0,
-  ratingValue: 0,
-  ratingRequestId: null,
-};
+      if (isEdit) {
+        state.myRequests = state.myRequests.map(function(r) {
+          return r.id === state.editingRequestId ? requestItem : r;
+        });
+      } else {
+        state.myRequests.unshift(requestItem);
+      }
 
-/* ============================================================
-   STREAK TRACKING
-   ============================================================ */
-var Streak = {
-  KEY_DATE:  'scrs-last-active',
-  KEY_COUNT: 'scrs-streak',
-  update: function() {
-    var today = new Date().toDateString();
-    var last  = localStorage.getItem(this.KEY_DATE);
-    var count = parseInt(localStorage.getItem(this.KEY_COUNT) || '0', 10);
-    if (!last) {
-      count = 1;
-    } else if (last === today) {
-      // same day — no change
-    } else {
-      var diff = (new Date(today) - new Date(last)) / (1000 * 60 * 60 * 24);
+      var currentPts = (state.user && state.user.points) || 0;
+      var newPts     = isEdit ? currentPts : currentPts + 10;
+      if (state.user) state.user.points = newPts;
+      if (!isEdit) floatXP(10, document.getElementById('header-xp'));
+
       count = (diff <= 1) ? count + 1 : 1;
     }
     localStorage.setItem(this.KEY_DATE,  today);
@@ -736,7 +728,7 @@ function renderCitizenRequests(newRefNum) {
         var url  = _imgUrl(att.file_url || att.url || '');
         var name = escapeHtml(att.file_name || ('Image ' + (idx + 1)));
         imagesHtml += '<button type="button" class="req-img-thumb" ' +
-          'onclick="event.stopPropagation();App.openCitizenLightbox(' + JSON.stringify(req.attachments) + ',' + idx + ')" ' +
+          'onclick="event.stopPropagation();App.openCitizenLightboxById(' + req.id + ',' + idx + ')" ' +
           'aria-label="View ' + name + '">' +
           '<img src="' + escapeHtml(url) + '" alt="' + name + '" loading="lazy">' +
         '</button>';
@@ -800,6 +792,14 @@ function renderCitizenRequests(newRefNum) {
       confirmHtml = '<div class="req-confirm-expired">Confirmation window expired on ' + formatDateTime(req.review_deadline) + '</div>';
     }
 
+    var actionButtons = '';
+    if (!req.status || req.status === 'open' || req.status === 'in_progress') {
+      actionButtons = '<div class="req-action-row">' +
+        '<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();App.openRequestEditModal(' + req.id + ')">Edit</button>' +
+        '<button class="btn btn-danger btn-sm" onclick="event.stopPropagation();App.deleteRequest(' + req.id + ')">Delete</button>' +
+      '</div>';
+    }
+
     var descPreview = req.description && String(req.description).trim()
       ? escapeHtml(req.description.length > 90 ? req.description.slice(0, 90) + '…' : req.description)
       : '';
@@ -830,6 +830,7 @@ function renderCitizenRequests(newRefNum) {
         '<div class="req-desc-text">' + escapeHtml(req.description && String(req.description).trim() ? req.description : 'No description provided.') + '</div>' +
         (req.category_name ? '<p class="req-cat-label">Category: ' + escapeHtml(req.category_name) + '</p>' : '') +
         confirmHtml +
+        actionButtons +
         imagesHtml +
         responsesHtml +
         ratingHtml +
@@ -1509,6 +1510,60 @@ App.openLightbox = function(index) {
   if (closeBtn) closeBtn.focus();
 };
 
+App.openCitizenLightboxById = function(requestId, index) {
+  var req = state.myRequests.find(function(r) { return r.id === requestId; });
+  if (!req || !req.attachments || !req.attachments.length) return;
+  state.lightboxAttachments = req.attachments;
+  App.openLightbox(index);
+};
+
+App.openRequestEditModal = function(requestId) {
+  var req = state.myRequests.find(function(r) { return r.id === requestId; });
+  if (!req) return;
+  state.editingRequestId = requestId;
+  state.form = {
+    step: 2,
+    categoryId: req.category_id || null,
+    categoryName: req.category_name || '',
+    title: req.title || '',
+    description: req.description || '',
+    location: req.location_address || '',
+    priority: req.priority || 'medium',
+    photos: [],
+  };
+  renderStep(2);
+  updateModalProgress(2);
+  renderCategoryGrid();
+  var titleEl = document.getElementById('req-title');
+  var descEl  = document.getElementById('req-description');
+  var locEl   = document.getElementById('req-location');
+  if (titleEl) titleEl.value = state.form.title;
+  if (descEl)  descEl.value  = state.form.description;
+  if (locEl)   locEl.value   = state.form.location;
+  document.querySelectorAll('input[name="req-priority"]').forEach(function(r) { r.checked = r.value === state.form.priority; });
+  var previews = document.getElementById('photo-previews');
+  if (previews) previews.innerHTML = '<div class="field-note">Editing text only; photo changes are not supported in this version.</div>';
+  var photoInput = document.getElementById('photo-input');
+  if (photoInput) photoInput.value = '';
+  var modal = document.getElementById('request-modal');
+  if (modal) modal.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+  var titleText = document.getElementById('modal-title-text');
+  if (titleText) titleText.textContent = 'Edit Request';
+};
+
+App.deleteRequest = function(requestId) {
+  if (!confirm('Delete this request? This cannot be undone.')) return;
+  API.requests.remove(requestId, state.token)
+    .then(function() {
+      state.myRequests = state.myRequests.filter(function(r) { return r.id !== requestId; });
+      renderCitizenStats();
+      renderCitizenRequests();
+      Toast.show('Request deleted', 'The request has been removed from your dashboard.', 'success');
+    })
+    .catch(function(err) { Toast.show('Delete failed', err.message || 'Could not delete request.', 'error'); });
+};
+
 App.closeLightbox = function() {
   var lb = document.getElementById('lightbox');
   if (lb) lb.classList.add('hidden');
@@ -1539,6 +1594,7 @@ function populateAdminCategoryFilter() {
    ============================================================ */
 App.openRequestModal = function() {
   state.form = { step: 1, categoryId: null, categoryName: '', title: '', description: '', location: '', priority: 'medium', photos: [] };
+  state.editingRequestId = null;
   renderStep(1); updateModalProgress(1); renderCategoryGrid();
   ['req-title','req-description','req-location'].forEach(function(id) {
     var el = document.getElementById(id);
@@ -1553,6 +1609,8 @@ App.openRequestModal = function() {
   var modal = document.getElementById('request-modal');
   if (modal) modal.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
+  var titleText = document.getElementById('modal-title-text');
+  if (titleText) titleText.textContent = 'Submit New Request';
   setTimeout(function() {
     var first = modal && (modal.querySelector('.category-tile') || modal.querySelector('input, button'));
     if (first) first.focus();
@@ -1563,6 +1621,9 @@ App.closeRequestModal = function() {
   var modal = document.getElementById('request-modal');
   if (modal) modal.classList.add('hidden');
   document.body.style.overflow = '';
+  state.editingRequestId = null;
+  var titleText = document.getElementById('modal-title-text');
+  if (titleText) titleText.textContent = 'Submit New Request';
 };
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -1801,11 +1862,22 @@ function submitRequest() {
   f.photos.forEach(function(file) { formData.append('attachments', file); });
 
   setButtonLoading('modal-next-btn', true);
-  API.requests.submit(formData, state.token)
+  var requestPromise = state.editingRequestId
+    ? API.requests.update(state.editingRequestId, {
+        category_id: f.categoryId,
+        title: f.title,
+        description: f.description,
+        location_address: f.location,
+        priority: f.priority,
+      }, state.token)
+    : API.requests.submit(formData, state.token);
+
+  requestPromise
     .then(function(data) {
+      var isEdit = Boolean(state.editingRequestId);
       var ref = data.reference_number || 'N/A';
       App.closeRequestModal();
-      Toast.show('Request submitted! 🎉', 'Reference: ' + ref + ' — You earned +10 civic points!', 'success');
+      Toast.show(isEdit ? 'Request updated' : 'Request submitted! 🎉', 'Reference: ' + ref + (isEdit ? '' : ' — You earned +10 civic points!'), 'success');
 
       var requestItem = data.request || {
         id: Date.now(), reference_number: ref, title: f.title, description: f.description,
@@ -1830,11 +1902,22 @@ function submitRequest() {
 
       state.myRequests.unshift(requestItem);
 
+      if (isEdit) {
+        state.myRequests = state.myRequests.map(function(r) {
+          return r.id === state.editingRequestId ? requestItem : r;
+        });
+      } else {
+        state.myRequests.unshift(requestItem);
+      }
+      } else {
+        state.myRequests.unshift(requestItem);
+      }
+      var newPts     = isEdit ? currentPts : currentPts + 10;
       // Update gamification optimistically with level-up detection
       var currentPts = (state.user && state.user.points) || 0;
       var newPts     = currentPts + 10;
       if (state.user) state.user.points = newPts;
-      renderGamification(newPts, currentPts);
+      if (!isEdit) floatXP(10, document.getElementById('header-xp'));
 
       // Float XP from header badge
       floatXP(10, document.getElementById('header-xp'));
