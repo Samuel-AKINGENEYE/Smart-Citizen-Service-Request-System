@@ -2,7 +2,9 @@
    API SERVICE — All backend calls centralized here
    ============================================================ */
 
-const API_URL = 'https://scrs-api.onrender.com/api';
+const API_URL = window.__API_URL__ || ((window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:3000/api'
+  : 'https://scrs-api.onrender.com/api');
 
 /* ---- Internal helper ---- */
 async function _request(method, path, body, token) {
@@ -93,6 +95,10 @@ const requests = {
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new ApiError(data.message || 'Submission failed', res.status, data);
     return data;
+  },
+
+  async confirm(id, token) {
+    return _request('POST', `/requests/${id}/confirm`, null, token);
   },
 
   async rate(id, rating, feedback, token) {

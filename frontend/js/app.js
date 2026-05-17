@@ -785,6 +785,21 @@ function renderCitizenRequests(newRefNum) {
       }
     }
 
+    var confirmed  = req.citizen_confirmed;
+    var deadline   = req.review_deadline ? new Date(req.review_deadline) : null;
+    var confirmAllowed = !confirmed && deadline && new Date() <= deadline && req.status !== 'resolved' && req.status !== 'rejected';
+    var confirmHtml = '';
+    if (confirmed) {
+      confirmHtml = '<div class="req-confirm-badge">✅ Confirmed on ' + formatDateTime(req.citizen_confirmed_at || req.created_at) + '</div>';
+    } else if (confirmAllowed) {
+      confirmHtml = '<div class="req-confirm-cta">' +
+        '<button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();App.confirmRequest(' + req.id + ')">Confirm details within 24h</button>' +
+        '<span class="req-confirm-note">You can confirm this request within 24 hours of submission.</span>' +
+      '</div>';
+    } else if (req.review_deadline) {
+      confirmHtml = '<div class="req-confirm-expired">Confirmation window expired on ' + formatDateTime(req.review_deadline) + '</div>';
+    }
+
     var descPreview = req.description
       ? escapeHtml(req.description.length > 90 ? req.description.slice(0, 90) + '…' : req.description)
       : '';
@@ -814,6 +829,7 @@ function renderCitizenRequests(newRefNum) {
       '<div class="req-card-body hidden">' +
         '<div class="req-desc-text">' + escapeHtml(req.description || 'No description provided.') + '</div>' +
         (req.category_name ? '<p class="req-cat-label">Category: ' + escapeHtml(req.category_name) + '</p>' : '') +
+        confirmHtml +
         imagesHtml +
         responsesHtml +
         ratingHtml +
@@ -834,6 +850,22 @@ App.toggleRequestCard = function(card) {
 App.openCitizenLightbox = function(attachments, index) {
   state.lightboxAttachments = attachments;
   App.openLightbox(index);
+};
+
+App.confirmRequest = function(id) {
+  API.requests.confirm(id, state.token)
+    .then(function() {
+      var req = state.myRequests.find(function(r) { return r.id === id; });
+      if (req) {
+        req.citizen_confirmed = 1;
+        req.citizen_confirmed_at = new Date().toISOString();
+      }
+      renderCitizenRequests();
+      Toast.show('Confirmed', 'Your request details are now validated for 24 hours.', 'success');
+    })
+    .catch(function(err) {
+      Toast.show('Confirmation failed', err.message || 'Could not confirm the request details.', 'error');
+    });
 };
 
 /* ============================================================
@@ -1023,7 +1055,7 @@ function renderAdminTable() {
   if (count) count.textContent = total;
 
   if (total === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="table-empty">No requests found. Try adjusting your filters.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="table-empty">No requests found. Try adjusting your filters.</td></tr>';
     renderPagination(0);
     return;
   }
@@ -1034,6 +1066,7 @@ function renderAdminTable() {
   tbody.innerHTML = paged.map(function(req) {
     var meta     = getCategoryMeta(req.category_name || '');
     var selected = req.id === state.selectedRequestId;
+    var descSnippet = req.description ? escapeHtml(req.description.slice(0, 80)) + (req.description.length > 80 ? '…' : '') : '—';
     return '<tr class="' + (selected ? 'selected' : '') + '"' +
       ' onclick="App.openSidePanel(' + req.id + ')"' +
       ' data-id="' + req.id + '"' +
@@ -1048,6 +1081,7 @@ function renderAdminTable() {
         '<span aria-hidden="true">' + meta.emoji + '</span>' + escapeHtml(req.category_name || '—') +
       '</span></td>' +
       '<td class="truncate" style="max-width:200px">' + escapeHtml(req.title || '—') + '</td>' +
+      '<td class="truncate" style="max-width:260px">' + descSnippet + '</td>' +
       '<td>' +
         '<select class="status-select status-' + (req.status||'open') + '"' +
           ' aria-label="Update status"' +

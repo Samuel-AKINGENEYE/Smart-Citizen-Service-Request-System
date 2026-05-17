@@ -1,50 +1,28 @@
 const db = require('../db');
 
- HEAD
-// Get all requests
 exports.getAllRequests = (req, res) => {
-    const query = 'SELECT * FROM requests';
-    db.query(query, (err, results) => {
-        if (err) {
-            console.error('Error fetching requests:', err.message);
-            return res.status(500).json({ error: 'Database error' });
-        }
-        res.json(results);
-    });
+  const sql = 'SELECT * FROM requests ORDER BY created_at DESC';
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error('Error fetching requests:', err.message);
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+    res.json({ success: true, requests: results });
+  });
 };
 
-// Create new request
 exports.createRequest = (req, res) => {
-    const { name, contact, issue_type, location, description } = req.body;
-    const query = 'INSERT INTO requests (name, contact, issue_type, location, description) VALUES (?, ?, ?, ?, ?)';
-    db.query(query, [name, contact, issue_type, location, description], (err, result) => {
-        if (err) {
-            console.error('Error creating request:', err.message);
-            return res.status(500).json({ error: 'Database error' });
-        }
-        res.json({ message: 'Request submitted successfully', id: result.insertId });
+  const { name, contact, issue_type, location, description } = req.body;
+  if (!name || !contact || !issue_type || !description) {
+    return res.status(400).json({ success: false, message: 'Missing required fields' });
+  }
 
-exports.createRequest = (req, res) => {
-    const { name, contact, issue_type, location, description } = req.body;
-
-    const sql = `
-        INSERT INTO requests (name, contact, issue_type, location, description)
-        VALUES (?, ?, ?, ?, ?)
-    `;
-
-    db.query(sql, [name, contact, issue_type, location, description], (err) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).json({ error: 'Database error' });
-        }
-        res.json({ message: 'Request submitted' });
-    });
-};
-
-exports.getAllRequests = (req, res) => {
-    db.query('SELECT * FROM requests', (err, results) => {
-        if (err) return res.status(500).json(err);
-        res.json(results);
- 1a6eb81 (Full working progress: backend + frontend integration, database connected, request submission working)
-    });
+  const sql = 'INSERT INTO requests (name, contact, issue_type, location, description) VALUES (?, ?, ?, ?, ?)';
+  db.query(sql, [name.trim(), contact.trim(), issue_type.trim(), location ? location.trim() : null, description.trim()], (err, result) => {
+    if (err) {
+      console.error('Error creating request:', err.message);
+      return res.status(500).json({ success: false, message: 'Database error' });
+    }
+    res.status(201).json({ success: true, message: 'Request submitted successfully', id: result.insertId });
+  });
 };

@@ -1,73 +1,68 @@
-<<<<<<< HEAD
-const API_URL = 'http://localhost:3000/requests';
-=======
-const form = document.getElementById('requestForm');
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3000/requests'
+  : '/requests';
+
+const requestForm = document.getElementById('requestForm') || document.getElementById('reportForm');
 const responseDiv = document.getElementById('response');
 
-form.addEventListener('submit', async (e) => {
-    e.preventDefault();
+function getFormFields(form) {
+  if (!form) return null;
+  return {
+    citizen_name: form.querySelector('[name="citizen_name"]')?.value.trim() || '',
+    contact_info: form.querySelector('[name="contact_info"]')?.value.trim() || '',
+    issue_type: form.querySelector('[name="issue_type"]')?.value.trim() || '',
+    location: form.querySelector('[name="location"]')?.value.trim() || '',
+    description: form.querySelector('[name="description"]')?.value.trim() || '',
+  };
+}
 
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries());
+async function submitRequest(event) {
+  event.preventDefault();
+  const data = getFormFields(requestForm);
+  if (!data || !data.citizen_name || !data.contact_info || !data.issue_type || !data.description) {
+    if (responseDiv) responseDiv.textContent = 'Please fill out all required fields.';
+    return;
+  }
 
-    try {
-        const res = await fetch('http://localhost:3000/requests', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-
-        const result = await res.json();
-        responseDiv.textContent = result.message || JSON.stringify(result);
-        form.reset();
-    } catch (err) {
-        console.error(err);
-        responseDiv.textContent = 'Error submitting request';
-    }
-});
->>>>>>> 1a6eb81 (Full working progress: backend + frontend integration, database connected, request submission working)
-
-document.getElementById('reportForm').addEventListener('submit', e => {
-    e.preventDefault();
-    const data = {
-        citizen_name: document.getElementById('name').value,
-        contact_info: document.getElementById('contact').value,
-        issue_type: document.getElementById('issueType').value,
-        location: document.getElementById('location').value,
-        description: document.getElementById('description').value
-    };
-
-    fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    })
-    .then(res => res.json())
-    .then(() => {
-        alert('Request submitted!');
-        document.getElementById('reportForm').reset();
-        loadRequests();
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
     });
-});
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.message || 'Submission failed');
+    if (responseDiv) responseDiv.textContent = result.message || 'Request submitted successfully';
+    requestForm.reset();
+    await loadRequests();
+  } catch (err) {
+    console.error(err);
+    if (responseDiv) responseDiv.textContent = err.message || 'Error submitting request';
+  }
+}
 
-// Load all requests
-function loadRequests() {
-    fetch(API_URL)
-    .then(res => res.json())
-    .then(requests => {
-        const container = document.getElementById('requestsList');
-        container.innerHTML = '';
-        requests.forEach(r => {
-            container.innerHTML += `
-                <div>
-                    <strong>${r.citizen_name} (${r.contact_info})</strong><br>
-                    Issue: ${r.issue_type}<br>
-                    Location: ${r.location}<br>
-                    Status: ${r.status}<br>
-                    <p>${r.description}</p>
-                </div><hr>`;
-        });
-    });
+async function loadRequests() {
+  try {
+    const res = await fetch(API_URL);
+    const data = await res.json();
+    const requests = Array.isArray(data) ? data : data.requests || [];
+    const container = document.getElementById('requestsList');
+    if (!container) return;
+    container.innerHTML = requests.map(r => `
+      <div>
+        <strong>${r.citizen_name || r.name || 'Anonymous'} (${r.contact_info || r.contact || 'N/A'})</strong><br>
+        Issue: ${r.issue_type || 'Unknown'}<br>
+        Location: ${r.location || 'Not specified'}<br>
+        Status: ${r.status || 'open'}<br>
+        <p>${r.description || ''}</p>
+      </div><hr>`).join('');
+  } catch (err) {
+    console.error('Failed to load requests', err);
+  }
+}
+
+if (requestForm) {
+  requestForm.addEventListener('submit', submitRequest);
 }
 
 loadRequests();

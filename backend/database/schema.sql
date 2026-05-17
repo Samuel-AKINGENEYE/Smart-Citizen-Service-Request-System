@@ -54,6 +54,9 @@ ADD COLUMN IF NOT EXISTS status ENUM('open', 'in_progress', 'resolved', 'rejecte
 ADD COLUMN IF NOT EXISTS priority ENUM('low', 'medium', 'high', 'urgent') DEFAULT 'medium',
 ADD COLUMN IF NOT EXISTS assigned_to INT,
 ADD COLUMN IF NOT EXISTS resolved_at TIMESTAMP,
+ADD COLUMN IF NOT EXISTS citizen_confirmed TINYINT(1) DEFAULT 0,
+ADD COLUMN IF NOT EXISTS citizen_confirmed_at TIMESTAMP NULL,
+ADD COLUMN IF NOT EXISTS review_deadline TIMESTAMP NULL,
 ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 ADD INDEX idx_status (status),
 ADD INDEX idx_reference (reference_number);

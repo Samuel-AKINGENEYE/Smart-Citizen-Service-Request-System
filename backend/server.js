@@ -1,14 +1,29 @@
-const express  = require('express');
-const cors     = require('cors');
-const bcrypt   = require('bcryptjs');
-const jwt      = require('jsonwebtoken');
-const mysql    = require('mysql2/promise');
-const multer   = require('multer');
-const path     = require('path');
-const fs       = require('fs');
+require('dotenv').config();
+const express    = require('express');
+const cors       = require('cors');
+const helmet     = require('helmet');
+const rateLimit  = require('express-rate-limit');
+const bcrypt     = require('bcryptjs');
+const jwt        = require('jsonwebtoken');
+const mysql      = require('mysql2/promise');
+const multer     = require('multer');
+const path       = require('path');
+const fs         = require('fs');
 const nodemailer = require('nodemailer');
 
 const app  = express();
+app.set('trust proxy', true);
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(limiter);
+app.use(helmet());
+
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'scrs_secret_key_2026';
 const BASE_URL   = process.env.BASE_URL   || 'https://scrs-api.onrender.com';
@@ -17,8 +32,8 @@ const BASE_URL   = process.env.BASE_URL   || 'https://scrs-api.onrender.com';
 // MIDDLEWARE
 // ========================
 app.use(cors({ origin: '*', methods: ['GET','POST','PUT','DELETE','PATCH'], allowedHeaders: ['Content-Type','Authorization'] }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Uploads
 const UPLOAD_DIR = path.join(__dirname, 'uploads');
@@ -188,7 +203,11 @@ app.post('/api/auth/register', async (req, res) => {
     if (!email || !phone || !password || !full_name)
       return res.status(400).json({ success: false, message: 'All fields are required' });
 
-    const existing = await q('SELECT id FROM users WHERE email = ?', [email.trim().toLowerCase()]);
+    const emailClean = email.trim().toLowerCase();
+    const phoneClean = phone.trim();
+    const nameClean  = full_name.trim();
+
+    const existing = await q('SELECT id FROM users WHERE email = ?', [emailClean]);
     if (existing.length)
       return res.status(400).json({ success: false, message: 'Email already registered' });
 
@@ -198,7 +217,7 @@ app.post('/api/auth/register', async (req, res) => {
     const result = await q(
       `INSERT INTO users (email, phone, password_hash, full_name, national_id, otp_code, otp_expires_at, points, level, badge)
        VALUES (?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 10 MINUTE), 0, 1, 'Newcomer')`,
-      [email.trim().toLowerCase(), phone.trim(), hash, full_name.trim(), national_id || 'N/A', otp]
+      [emailClean, phoneClean, hash, nameClean, national_id ? national_id.trim() : 'N/A', otp]
     );
 
     await sendOtpEmail(email.trim().toLowerCase(), full_name.trim(), otp);
@@ -213,7 +232,9 @@ app.post('/api/auth/register', async (req, res) => {
 app.post('/api/auth/verify-otp', async (req, res) => {
   try {
     const { email, otp } = req.body;
-    const [u] = await q('SELECT id, otp_code, otp_expires_at FROM users WHERE email = ?', [email]);
+    if (!email || !otp) return res.status(400).json({ success: false, message: 'Email and OTP are required' });
+    const emailClean = email.trim().toLowerCase();
+    const [u] = await q('SELECT id, otp_code, otp_expires_at FROM users WHERE email = ?', [emailClean]);
     if (!u) return res.status(404).json({ success: false, message: 'Email not found' });
     if (u.otp_code !== otp) return res.status(400).json({ success: false, message: 'Incorrect verification code' });
     if (new Date() > new Date(u.otp_expires_at)) return res.status(400).json({ success: false, message: 'Code expired — please request a new one' });
@@ -231,7 +252,9 @@ app.post('/api/auth/verify-otp', async (req, res) => {
 app.post('/api/auth/resend-otp', async (req, res) => {
   try {
     const { email } = req.body;
-    const [u] = await q('SELECT id, full_name, is_verified FROM users WHERE email = ?', [email]);
+    if (!email) return res.status(400).json({ success: false, message: 'Email is required' });
+    const emailClean = email.trim().toLowerCase();
+    const [u] = await q('SELECT id, full_name, is_verified FROM users WHERE email = ?', [emailClean]);
     if (!u) return res.status(404).json({ success: false, message: 'Email not found' });
     if (u.is_verified) return res.status(400).json({ success: false, message: 'Account is already verified' });
 
@@ -249,11 +272,13 @@ app.post('/api/auth/resend-otp', async (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ success: false, message: 'Email and password are required' });
+    const emailClean = email.trim().toLowerCase();
     const [u] = await q(
       'SELECT id, email, password_hash, full_name, role, is_active, is_verified, points, level, badge FROM users WHERE email = ?',
-      [email.trim().toLowerCase()]
+      [emailClean]
     );
-    if (!u)         return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    if (!u) return res.status(401).json({ success: false, message: 'Invalid email or password' });
     if (!u.is_active) return res.status(401).json({ success: false, message: 'Account deactivated — contact support' });
 
     const validPw = await bcrypt.compare(password, u.password_hash);
@@ -303,8 +328,8 @@ app.post('/api/requests', authenticateToken, upload.array('attachments', 5), asy
     const refNum = 'SCRS-' + Date.now().toString().slice(-6) + '-' + String(Math.floor(Math.random() * 100)).padStart(2, '0');
 
     const result = await q(
-      `INSERT INTO requests (reference_number, citizen_id, category_id, title, description, location_address, priority, status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 'open', NOW())`,
+      `INSERT INTO requests (reference_number, citizen_id, category_id, title, description, location_address, priority, status, created_at, review_deadline, citizen_confirmed)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'open', NOW(), DATE_ADD(NOW(), INTERVAL 24 HOUR), 0)`,
       [refNum, citizenId, category_id || null, title.trim(), description.trim(), location_address?.trim() || null, priority || 'medium']
     );
     const reqId = result.insertId;
@@ -312,9 +337,7 @@ app.post('/api/requests', authenticateToken, upload.array('attachments', 5), asy
     // Save attachments
     if (req.files?.length) {
       for (const file of req.files) {
-        const host    = req.get('host') || 'scrs-api.onrender.com';
-        const proto   = req.headers['x-forwarded-proto'] || req.protocol || 'https';
-        const fileUrl = `${proto}://${host}/uploads/${file.filename}`;
+        const fileUrl = `${BASE_URL}/uploads/${file.filename}`;
         await q(
           'INSERT INTO request_attachments (request_id, file_url, file_name, file_size, mime_type) VALUES (?, ?, ?, ?, ?)',
           [reqId, fileUrl, file.originalname, file.size, file.mimetype]
@@ -344,6 +367,7 @@ app.get('/api/requests/my-requests', authenticateToken, async (req, res) => {
     const requests  = await q(
       `SELECT r.id, r.reference_number, r.title, r.description, r.status, r.priority,
               r.location_address, r.created_at, r.updated_at, r.resolved_at,
+              r.citizen_confirmed, r.citizen_confirmed_at, r.review_deadline,
               c.name AS category_name, c.id AS category_id
        FROM requests r
        LEFT JOIN categories c ON r.category_id = c.id
@@ -373,6 +397,37 @@ app.get('/api/requests/my-requests', authenticateToken, async (req, res) => {
     }
 
     res.json({ success: true, requests });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Confirm request submission details (within 24 hours)
+app.post('/api/requests/:id/confirm', authenticateToken, async (req, res) => {
+  try {
+    const reqId     = parseInt(req.params.id);
+    const citizenId = req.user.userId;
+    const [existing] = await q(
+      `SELECT id, status, citizen_confirmed, review_deadline
+       FROM requests
+       WHERE id = ? AND citizen_id = ?`,
+      [reqId, citizenId]
+    );
+    if (!existing) return res.status(404).json({ success: false, message: 'Request not found' });
+    if (existing.citizen_confirmed) return res.status(400).json({ success: false, message: 'Request is already confirmed' });
+    if (!existing.review_deadline || new Date() > new Date(existing.review_deadline))
+      return res.status(400).json({ success: false, message: 'Confirmation window has expired' });
+
+    await q(
+      'UPDATE requests SET citizen_confirmed = 1, citizen_confirmed_at = NOW() WHERE id = ?',
+      [reqId]
+    );
+    await q(
+      'INSERT INTO request_timeline (request_id, user_id, action, old_status, new_status, is_public, created_at) VALUES (?, ?, ?, ?, ?, 1, NOW())',
+      [reqId, citizenId, 'Request confirmed by citizen', existing.status, existing.status]
+    );
+
+    res.json({ success: true, message: 'Request confirmed successfully' });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -424,12 +479,24 @@ app.get('/api/user/profile', authenticateToken, async (req, res) => {
 
 app.get('/api/admin/stats', authenticateToken, requireAdmin, async (req, res) => {
   try {
-    const [[total]]    = [await q('SELECT COUNT(*) AS n FROM requests')];
-    const [[open]]     = [await q("SELECT COUNT(*) AS n FROM requests WHERE status = 'open'")];
-    const [[inprog]]   = [await q("SELECT COUNT(*) AS n FROM requests WHERE status = 'in_progress'")];
-    const [[resolved]] = [await q("SELECT COUNT(*) AS n FROM requests WHERE status = 'resolved'")];
-    const [[rejected]] = [await q("SELECT COUNT(*) AS n FROM requests WHERE status = 'rejected'")];
-    res.json({ success: true, stats: { total: total.n, open: open.n, inProgress: inprog.n, resolved: resolved.n, rejected: rejected.n } });
+    const [totalRows, openRows, inProgressRows, resolvedRows, rejectedRows] = await Promise.all([
+      q('SELECT COUNT(*) AS n FROM requests'),
+      q("SELECT COUNT(*) AS n FROM requests WHERE status = 'open'"),
+      q("SELECT COUNT(*) AS n FROM requests WHERE status = 'in_progress'"),
+      q("SELECT COUNT(*) AS n FROM requests WHERE status = 'resolved'"),
+      q("SELECT COUNT(*) AS n FROM requests WHERE status = 'rejected'"),
+    ]);
+
+    res.json({
+      success: true,
+      stats: {
+        total: totalRows[0]?.n || 0,
+        open: openRows[0]?.n || 0,
+        inProgress: inProgressRows[0]?.n || 0,
+        resolved: resolvedRows[0]?.n || 0,
+        rejected: rejectedRows[0]?.n || 0,
+      },
+    });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -439,7 +506,7 @@ app.get('/api/admin/requests', authenticateToken, requireAdmin, async (req, res)
   try {
     const rows = await q(
       `SELECT r.id, r.reference_number, r.title, r.description, r.status, r.priority,
-              r.location_address, r.created_at, r.updated_at,
+              r.location_address, r.created_at, r.updated_at, r.citizen_confirmed, r.citizen_confirmed_at,
               c.name AS category_name, c.id AS category_id,
               u.full_name AS citizen_name, u.email AS citizen_email, u.phone AS citizen_phone
        FROM requests r
@@ -458,7 +525,7 @@ app.get('/api/admin/requests/:id', authenticateToken, requireAdmin, async (req, 
     const id = parseInt(req.params.id);
     const [row] = await q(
       `SELECT r.id, r.reference_number, r.title, r.description, r.status, r.priority,
-              r.location_address, r.created_at, r.updated_at,
+              r.location_address, r.created_at, r.updated_at, r.citizen_confirmed, r.citizen_confirmed_at, r.review_deadline,
               c.name AS category_name, c.id AS category_id,
               u.id AS citizen_id, u.full_name AS citizen_name, u.email AS citizen_email, u.phone AS citizen_phone
        FROM requests r
@@ -600,6 +667,9 @@ async function initDb() {
   await safeExec("ALTER TABLE users ADD COLUMN IF NOT EXISTS level INT DEFAULT 1");
   await safeExec("ALTER TABLE users ADD COLUMN IF NOT EXISTS badge VARCHAR(50) DEFAULT 'Newcomer'");
   await safeExec('ALTER TABLE request_timeline ADD COLUMN IF NOT EXISTS is_public TINYINT(1) DEFAULT 1');
+  await safeExec('ALTER TABLE requests ADD COLUMN IF NOT EXISTS citizen_confirmed TINYINT(1) DEFAULT 0');
+  await safeExec('ALTER TABLE requests ADD COLUMN IF NOT EXISTS citizen_confirmed_at TIMESTAMP NULL');
+  await safeExec('ALTER TABLE requests ADD COLUMN IF NOT EXISTS review_deadline TIMESTAMP NULL');
 
   await safeExec(`
     CREATE TABLE IF NOT EXISTS request_responses (
@@ -631,6 +701,12 @@ async function initDb() {
 // ========================
 // START
 // ========================
+app.use((err, req, res, next) => {
+  console.error('[Unhandled Error]', err);
+  if (res.headersSent) return next(err);
+  res.status(500).json({ success: false, message: 'Internal server error' });
+});
+
 app.listen(PORT, async () => {
   console.log(`✅ SCRS API running on port ${PORT}`);
   await initDb().catch(err => console.error('[DB] Init failed:', err.message));
