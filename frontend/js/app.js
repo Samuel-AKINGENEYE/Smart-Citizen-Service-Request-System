@@ -800,7 +800,7 @@ function renderCitizenRequests(newRefNum) {
       confirmHtml = '<div class="req-confirm-expired">Confirmation window expired on ' + formatDateTime(req.review_deadline) + '</div>';
     }
 
-    var descPreview = req.description != null
+    var descPreview = req.description && String(req.description).trim()
       ? escapeHtml(req.description.length > 90 ? req.description.slice(0, 90) + '…' : req.description)
       : '';
 
@@ -827,7 +827,7 @@ function renderCitizenRequests(newRefNum) {
         '<svg class="req-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>' +
       '</div>' +
       '<div class="req-card-body hidden">' +
-        '<div class="req-desc-text">' + escapeHtml(req.description || 'No description provided.') + '</div>' +
+        '<div class="req-desc-text">' + escapeHtml(req.description && String(req.description).trim() ? req.description : 'No description provided.') + '</div>' +
         (req.category_name ? '<p class="req-cat-label">Category: ' + escapeHtml(req.category_name) + '</p>' : '') +
         confirmHtml +
         imagesHtml +
@@ -1310,7 +1310,7 @@ function _renderPanelContent(container, req) {
   /* Section 3: Description */
   html += '<div class="panel-section">' +
     '<div class="panel-section-title">Description</div>' +
-    '<div class="panel-desc-full">' + escapeHtml(req.description != null ? req.description : 'No description provided.') + '</div>' +
+    '<div class="panel-desc-full">' + escapeHtml(req.description && String(req.description).trim() ? req.description : 'No description provided.') + '</div>' +
   '</div>';
 
   /* Section 4: Citizen info */
@@ -1813,6 +1813,21 @@ function submitRequest() {
         category_id: f.categoryId, category_name: f.categoryName,
         created_at: new Date().toISOString(), attachments: [], responses: [], my_rating: null,
       };
+
+      if (data.request) {
+        requestItem.description = data.request.description != null ? data.request.description : f.description;
+        requestItem.attachments = Array.isArray(data.request.attachments) && data.request.attachments.length
+          ? data.request.attachments
+          : f.photos.map(function(file, idx) {
+              return { file_url: URL.createObjectURL(file), file_name: file.name, file_size: file.size, mime_type: file.type };
+            });
+        requestItem.responses = Array.isArray(data.request.responses) ? data.request.responses : [];
+      } else if (f.photos.length) {
+        requestItem.attachments = f.photos.map(function(file) {
+          return { file_url: URL.createObjectURL(file), file_name: file.name, file_size: file.size, mime_type: file.type };
+        });
+      }
+
       state.myRequests.unshift(requestItem);
 
       // Update gamification optimistically with level-up detection
