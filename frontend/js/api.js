@@ -20,6 +20,9 @@ async function _request(method, path, body, token) {
   }
 
   const res  = await fetch(API_URL + path, opts);
+  if (res.status === 401) {
+    console.warn('[API] 401 Unauthorized for', path);
+  }
   const data = await res.json().catch(() => ({}));
 
   if (!res.ok) {

@@ -515,6 +515,7 @@ function handleSignIn(e) {
 
   API.auth.login(emailEl.value.trim(), pwEl.value)
     .then(function(data) {
+      console.log('[Auth] login response:', data);
       state.token = data.token;
       state.user  = data.user;
       localStorage.setItem('token', data.token);
@@ -586,6 +587,7 @@ App.verifyOtp = function() {
    ============================================================ */
 function enterApp() {
   var authView = document.getElementById('auth-view');
+  console.log('[App] enterApp(), user=', state.user, 'token=', state.token);
   return new Promise(function(resolve) {
     if (authView) {
       authView.classList.add('fade-out');
@@ -1989,6 +1991,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   var savedToken = localStorage.getItem('token');
   var savedUser  = localStorage.getItem('user');
+  console.log('[App] savedToken present?', !!savedToken);
   if (savedToken && savedUser) {
     try {
       state.token = savedToken;
