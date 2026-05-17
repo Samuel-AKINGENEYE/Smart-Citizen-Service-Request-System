@@ -23,21 +23,17 @@ const state = {
   adminStatusFilter: '',
   adminCategoryFilter: '',
   selectedRequestId: null,
-      if (isEdit) {
-        state.myRequests = state.myRequests.map(function(r) {
-          return r.id === state.editingRequestId ? requestItem : r;
-        });
-      } else {
-        state.myRequests.unshift(requestItem);
-      }
+};
 
-      var currentPts = (state.user && state.user.points) || 0;
-      var newPts     = isEdit ? currentPts : currentPts + 10;
-      if (state.user) state.user.points = newPts;
-      if (!isEdit) floatXP(10, document.getElementById('header-xp'));
-
-      count = (diff <= 1) ? count + 1 : 1;
-    }
+var Streak = {
+  KEY_DATE:  'scrs-streak-date',
+  KEY_COUNT: 'scrs-streak-count',
+  update: function() {
+    var today = new Date().toDateString();
+    var last  = localStorage.getItem(this.KEY_DATE);
+    var count = parseInt(localStorage.getItem(this.KEY_COUNT) || '0', 10);
+    var diff  = last ? (new Date(today) - new Date(last)) / (1000 * 86400) : 0;
+    count = (diff <= 1) ? count + 1 : 1;
     localStorage.setItem(this.KEY_DATE,  today);
     localStorage.setItem(this.KEY_COUNT, String(count));
     return count;
@@ -1902,8 +1898,6 @@ function submitRequest() {
         });
       }
 
-      state.myRequests.unshift(requestItem);
-
       if (isEdit) {
         state.myRequests = state.myRequests.map(function(r) {
           return r.id === state.editingRequestId ? requestItem : r;
@@ -1911,18 +1905,14 @@ function submitRequest() {
       } else {
         state.myRequests.unshift(requestItem);
       }
-      } else {
-        state.myRequests.unshift(requestItem);
-      }
-      var newPts     = isEdit ? currentPts : currentPts + 10;
-      // Update gamification optimistically with level-up detection
-      var currentPts = (state.user && state.user.points) || 0;
-      var newPts     = currentPts + 10;
-      if (state.user) state.user.points = newPts;
-      if (!isEdit) floatXP(10, document.getElementById('header-xp'));
 
-      // Float XP from header badge
-      floatXP(10, document.getElementById('header-xp'));
+      var currentPts = (state.user && state.user.points) || 0;
+      var newPts     = isEdit ? currentPts : currentPts + 10;
+      if (state.user) state.user.points = newPts;
+      if (!isEdit) {
+        floatXP(10, document.getElementById('header-xp'));
+        renderGamification(newPts, currentPts);
+      }
 
       // Update streak and check achievements
       Streak.update();
