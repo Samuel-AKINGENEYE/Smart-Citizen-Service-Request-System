@@ -1619,6 +1619,34 @@ input[type="password"] { padding-right: 42px; }
   font-size: 15px;
   flex-shrink: 0;
 }
+.admin-confirm-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  margin-left: 8px;
+}
+.admin-confirm-chip.confirmed {
+  background: rgba(46, 125, 50, 0.12);
+  color: #2e7d32;
+  border: 1px solid rgba(46, 125, 50, 0.2);
+}
+.admin-confirm-chip.pending {
+  background: rgba(255, 179, 0, 0.12);
+  color: #f57f17;
+  border: 1px solid rgba(255, 179, 0, 0.25);
+}
+.admin-confirm-chip.expired {
+  background: rgba(211, 47, 47, 0.12);
+  color: #d32f2f;
+  border: 1px solid rgba(211, 47, 47, 0.2);
+}
 .panel-info-label {
   font-size: 0.72rem;
   color: var(--text-muted);

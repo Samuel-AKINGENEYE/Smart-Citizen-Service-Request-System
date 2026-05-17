@@ -1067,6 +1067,14 @@ function renderAdminTable() {
     var meta     = getCategoryMeta(req.category_name || '');
     var selected = req.id === state.selectedRequestId;
     var descSnippet = req.description ? escapeHtml(req.description.slice(0, 80)) + (req.description.length > 80 ? '…' : '') : '—';
+    var confirmBadge = '';
+    if (req.citizen_confirmed) {
+      confirmBadge = '<span class="admin-confirm-chip confirmed">Confirmed</span>';
+    } else if (req.review_deadline && new Date(req.review_deadline) > new Date()) {
+      confirmBadge = '<span class="admin-confirm-chip pending">Pending review</span>';
+    } else if (req.review_deadline) {
+      confirmBadge = '<span class="admin-confirm-chip expired">Review expired</span>';
+    }
     return '<tr class="' + (selected ? 'selected' : '') + '"' +
       ' onclick="App.openSidePanel(' + req.id + ')"' +
       ' data-id="' + req.id + '"' +
@@ -1080,7 +1088,7 @@ function renderAdminTable() {
       '<td><span style="display:inline-flex;align-items:center;gap:5px">' +
         '<span aria-hidden="true">' + meta.emoji + '</span>' + escapeHtml(req.category_name || '—') +
       '</span></td>' +
-      '<td class="truncate" style="max-width:200px">' + escapeHtml(req.title || '—') + '</td>' +
+      '<td class="truncate" style="max-width:200px">' + escapeHtml(req.title || '—') + confirmBadge + '</td>' +
       '<td class="truncate" style="max-width:260px">' + descSnippet + '</td>' +
       '<td>' +
         '<select class="status-select status-' + (req.status||'open') + '"' +
@@ -1312,6 +1320,8 @@ function _renderPanelContent(container, req) {
       _panelInfoRow('👤', 'Name',  req.citizen_name  || req.full_name) +
       _panelInfoRow('✉️', 'Email', req.citizen_email || req.email) +
       _panelInfoRow('📞', 'Phone', req.citizen_phone || req.phone) +
+      _panelInfoRow('✅', 'Confirmed', req.citizen_confirmed ? 'Yes' : 'No') +
+      _panelInfoRow('⏰', 'Review deadline', req.review_deadline ? formatDateTime(req.review_deadline) : 'Not available') +
     '</div>' +
   '</div>';
 
