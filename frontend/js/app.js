@@ -950,6 +950,133 @@ function initAdminView() {
   if (nameEl) nameEl.textContent = uname;
   loadAdminData();
   populateAdminCategoryFilter();
+  renderAdminSidebar();
+}
+
+/* ========== Admin Sidebar + CRUD (client-side scaffold) ========== */
+function renderAdminSidebar() {
+  // Ensure admin-crud-root exists
+  var root = document.getElementById('admin-crud-root');
+  if (!root) return;
+  // Default to dashboard
+  App.showAdminPanel('dashboard');
+}
+
+App.showAdminPanel = function(panel) {
+  var root = document.getElementById('admin-crud-root');
+  if (!root) return;
+  if (panel === 'dashboard') {
+    root.innerHTML = '';
+    return;
+  }
+  if (panel === 'requests') {
+    root.innerHTML = '<div class="crud-panel"><strong>Requests</strong><p class="text-muted">Manage requests in the table below.</p></div>';
+    return;
+  }
+  if (panel === 'categories') {
+    renderCategoriesCrud(root);
+    return;
+  }
+  if (panel === 'users') {
+    renderUsersCrud(root);
+    return;
+  }
+  root.innerHTML = '<div class="crud-panel"><strong>' + escapeHtml(panel) + '</strong></div>';
+};
+
+/* Categories CRUD using localStorage (client-side scaffold) */
+function loadCategories() {
+  try { return JSON.parse(localStorage.getItem('admin-categories') || '[]'); } catch (e) { return []; }
+}
+function saveCategories(list) { localStorage.setItem('admin-categories', JSON.stringify(list)); }
+
+function renderCategoriesCrud(root) {
+  var cats = loadCategories();
+  root.innerHTML = '';
+  var panel = document.createElement('div'); panel.className = 'crud-panel';
+  panel.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center"><strong>Categories</strong><button class="btn btn-secondary" id="new-cat-btn">New Category</button></div>' +
+    '<div id="cat-form-wrap" style="margin-top:12px;display:none"></div>' +
+    '<div class="crud-list" id="cat-list"></div>';
+  root.appendChild(panel);
+
+  function refreshList() {
+    var list = document.getElementById('cat-list'); list.innerHTML = '';
+    cats.forEach(function(c, idx) {
+      var item = document.createElement('div'); item.className = 'crud-item';
+      item.innerHTML = '<div style="display:flex;gap:12px;align-items:center"><span>' + (c.emoji||'📋') + '</span><div><div style="font-weight:600">' + escapeHtml(c.name) + '</div><div style="font-size:0.85rem;color:var(--text-muted)">' + escapeHtml(c.description||'') + '</div></div></div>' +
+        '<div class="crud-actions"><button class="btn btn-secondary" onclick="App.editCategory(' + idx + ')">Edit</button><button class="btn btn-danger" onclick="App.deleteCategory(' + idx + ')">Delete</button></div>';
+      list.appendChild(item);
+    });
+    if (cats.length === 0) list.innerHTML = '<div class="text-muted">No categories yet.</div>';
+  }
+
+  document.getElementById('new-cat-btn').addEventListener('click', function() {
+    showCatForm();
+  });
+
+  function showCatForm(data, idx) {
+    var wrap = document.getElementById('cat-form-wrap');
+    wrap.style.display = '';
+    wrap.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px"><div><label>Name</label><input id="cat-name" type="text"/></div><div><label>Description</label><input id="cat-desc" type="text"/></div><div><label>Emoji</label><input id="cat-emoji" type="text" placeholder="📋"/></div><div style="display:flex;gap:8px"><button class="btn btn-primary" id="save-cat-btn">Save</button><button class="btn btn-secondary" id="cancel-cat-btn">Cancel</button></div></div>';
+    if (data) { document.getElementById('cat-name').value = data.name || ''; document.getElementById('cat-desc').value = data.description || ''; document.getElementById('cat-emoji').value = data.emoji || ''; }
+
+    document.getElementById('cancel-cat-btn').addEventListener('click', function() { wrap.style.display = 'none'; });
+    document.getElementById('save-cat-btn').addEventListener('click', function() {
+      var name = document.getElementById('cat-name').value.trim();
+      var desc = document.getElementById('cat-desc').value.trim();
+      var emoji = document.getElementById('cat-emoji').value.trim() || '📋';
+      if (!name) { Toast.show('Name required', 'Please provide a category name', 'warning'); return; }
+      if (typeof idx === 'number') { cats[idx] = { name: name, description: desc, emoji: emoji }; }
+      else { cats.push({ name: name, description: desc, emoji: emoji }); }
+      saveCategories(cats); wrap.style.display = 'none'; refreshList(); populateAdminCategoryFilter(); Toast.show('Saved', 'Category saved', 'success');
+    });
+  }
+
+  // expose edit/delete for global buttons
+  App.editCategory = function(i) { showCatForm(cats[i], i); };
+  App.deleteCategory = function(i) { if (!confirm('Delete this category?')) return; cats.splice(i,1); saveCategories(cats); refreshList(); populateAdminCategoryFilter(); Toast.show('Deleted', 'Category removed', 'success'); };
+
+  refreshList();
+}
+
+/* Users CRUD */
+function loadUsers() { try { return JSON.parse(localStorage.getItem('admin-users') || '[]'); } catch (e) { return []; } }
+function saveUsers(list) { localStorage.setItem('admin-users', JSON.stringify(list)); }
+
+function renderUsersCrud(root) {
+  var users = loadUsers();
+  root.innerHTML = '';
+  var panel = document.createElement('div'); panel.className = 'crud-panel';
+  panel.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center"><strong>Users</strong><button class="btn btn-secondary" id="new-user-btn">New User</button></div>' +
+    '<div id="user-form-wrap" style="margin-top:12px;display:none"></div>' +
+    '<div class="crud-list" id="user-list"></div>';
+  root.appendChild(panel);
+
+  function refreshList() {
+    var list = document.getElementById('user-list'); list.innerHTML = '';
+    users.forEach(function(u, idx) {
+      var item = document.createElement('div'); item.className = 'crud-item';
+      item.innerHTML = '<div><div style="font-weight:600">' + escapeHtml(u.full_name || u.email) + '</div><div style="font-size:0.85rem;color:var(--text-muted)">' + escapeHtml(u.email || '') + '</div></div>' +
+        '<div class="crud-actions"><button class="btn btn-secondary" onclick="App.editUser(' + idx + ')">Edit</button><button class="btn btn-danger" onclick="App.deleteUser(' + idx + ')">Delete</button></div>';
+      list.appendChild(item);
+    });
+    if (users.length === 0) list.innerHTML = '<div class="text-muted">No users yet.</div>';
+  }
+
+  document.getElementById('new-user-btn').addEventListener('click', function() { showUserForm(); });
+
+  function showUserForm(data, idx) {
+    var wrap = document.getElementById('user-form-wrap'); wrap.style.display = '';
+    wrap.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px"><div><label>Full name</label><input id="user-name" type="text"/></div><div><label>Email</label><input id="user-email" type="email"/></div><div style="display:flex;gap:8px"><button class="btn btn-primary" id="save-user-btn">Save</button><button class="btn btn-secondary" id="cancel-user-btn">Cancel</button></div></div>';
+    if (data) { document.getElementById('user-name').value = data.full_name || ''; document.getElementById('user-email').value = data.email || ''; }
+    document.getElementById('cancel-user-btn').addEventListener('click', function(){ wrap.style.display='none'; });
+    document.getElementById('save-user-btn').addEventListener('click', function(){ var name = document.getElementById('user-name').value.trim(); var email = document.getElementById('user-email').value.trim(); if (!email) { Toast.show('Email required','Please provide an email','warning'); return; } if (typeof idx === 'number') { users[idx] = { full_name: name, email: email }; } else { users.push({ full_name: name, email: email }); } saveUsers(users); wrap.style.display='none'; refreshList(); Toast.show('Saved','User saved','success'); });
+  }
+
+  App.editUser = function(i) { showUserForm(users[i], i); };
+  App.deleteUser = function(i) { if (!confirm('Delete this user?')) return; users.splice(i,1); saveUsers(users); refreshList(); Toast.show('Deleted','User removed','success'); };
+
+  refreshList();
 }
 
 function loadAdminData() {

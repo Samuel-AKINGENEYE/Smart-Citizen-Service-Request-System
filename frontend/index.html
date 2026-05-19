@@ -422,8 +422,26 @@
     </header>
 
     <div class="admin-layout">
+      <!-- Sidebar for admin CRUD navigation -->
+      <nav class="admin-sidebar" role="navigation" aria-label="Admin menu">
+        <div class="admin-sidebar-inner">
+          <div class="admin-sidebar-brand">Admin</div>
+          <ul class="admin-menu">
+            <li><button onclick="App.showAdminPanel('dashboard')" class="admin-menu-btn">Dashboard</button></li>
+            <li><button onclick="App.showAdminPanel('requests')" class="admin-menu-btn">Requests</button></li>
+            <li><button onclick="App.showAdminPanel('categories')" class="admin-menu-btn">Categories (CRUD)</button></li>
+            <li><button onclick="App.showAdminPanel('users')" class="admin-menu-btn">Users (CRUD)</button></li>
+            <li><button onclick="App.showAdminPanel('reports')" class="admin-menu-btn">Reports</button></li>
+            <li style="margin-top:12px"><button onclick="App.showAdminPanel('settings')" class="admin-menu-btn">Settings</button></li>
+          </ul>
+        </div>
+      </nav>
       <div class="admin-content">
         <main class="app-main">
+
+          <!-- Admin CRUD mount point -->
+          <div id="admin-crud-root" aria-live="polite"></div>
+
 
           <!-- Admin Stats -->
           <div class="stats-grid" id="admin-stats-grid" aria-label="Request statistics">

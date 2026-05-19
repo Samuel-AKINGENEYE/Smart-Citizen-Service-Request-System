@@ -1606,6 +1606,46 @@ input[type="password"] { padding-right: 42px; }
   .landing-hero .landing-title { font-size: 2.4rem; }
 }
 
+/* Admin sidebar */
+.admin-sidebar {
+  width: 240px;
+  background: var(--bg-white);
+  border-right: 1px solid var(--border);
+  padding: 20px 12px;
+  display: none;
+  flex-shrink: 0;
+}
+.admin-sidebar-inner { display:flex; flex-direction:column; gap:12px; }
+.admin-sidebar-brand { font-weight:700; font-size:1.1rem; color:var(--text-primary); padding:6px 8px; }
+.admin-menu { list-style:none; padding:0; margin:8px 0; display:flex; flex-direction:column; gap:6px; }
+.admin-menu-btn {
+  background: transparent;
+  border: none;
+  text-align: left;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight:600;
+  color:var(--text-secondary);
+}
+.admin-menu-btn:hover { background: var(--bg-subtle); color:var(--text-primary); }
+
+@media (min-width: 900px) {
+  .admin-sidebar { display: block; }
+  .admin-layout { gap: 0; }
+  .admin-content { padding: 0 24px; }
+  .app-main { padding-left: 24px; }
+}
+
+/* Admin CRUD area */
+#admin-crud-root { margin-bottom: 18px; }
+.crud-panel { background: var(--bg-white); border: 1px solid var(--border); border-radius: var(--r-card); padding: 16px; }
+.crud-row { display:flex; gap:10px; align-items:center; margin-bottom:8px; }
+.crud-list { margin-top:12px; display:flex; flex-direction:column; gap:8px; }
+.crud-item { padding:10px 12px; border:1px solid var(--border); border-radius:8px; display:flex; justify-content:space-between; gap:12px; align-items:center; }
+.crud-actions button { margin-left:8px; }
+
+
 @media (max-width: 899px) {
   .landing-hero { padding: 36px 20px; text-align: left; }
   .landing-hero .landing-title { font-size: 1.5rem; }
