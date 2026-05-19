@@ -970,7 +970,7 @@ App.showAdminPanel = function(panel) {
     return;
   }
   if (panel === 'requests') {
-    root.innerHTML = '<div class="crud-panel"><strong>Requests</strong><p class="text-muted">Manage requests in the table below.</p></div>';
+    root.innerHTML = '';
     return;
   }
   if (panel === 'categories') {
@@ -981,7 +981,7 @@ App.showAdminPanel = function(panel) {
     renderUsersCrud(root);
     return;
   }
-  root.innerHTML = '<div class="crud-panel"><strong>' + escapeHtml(panel) + '</strong></div>';
+  root.innerHTML = '';
 };
 
 /* Categories CRUD using localStorage (client-side scaffold) */
@@ -994,7 +994,7 @@ function renderCategoriesCrud(root) {
   var cats = loadCategories();
   root.innerHTML = '';
   var panel = document.createElement('div'); panel.className = 'crud-panel';
-  panel.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center"><strong>Categories</strong><button class="btn btn-secondary" id="new-cat-btn">New Category</button></div>' +
+  panel.innerHTML = '<div style="display:flex;justify-content:flex-end"><button class="btn btn-secondary" id="new-cat-btn">+ New Category</button></div>' +
     '<div id="cat-form-wrap" style="margin-top:12px;display:none"></div>' +
     '<div class="crud-list" id="cat-list"></div>';
   root.appendChild(panel);
@@ -1047,7 +1047,7 @@ function renderUsersCrud(root) {
   var users = loadUsers();
   root.innerHTML = '';
   var panel = document.createElement('div'); panel.className = 'crud-panel';
-  panel.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center"><strong>Users</strong><button class="btn btn-secondary" id="new-user-btn">New User</button></div>' +
+  panel.innerHTML = '<div style="display:flex;justify-content:flex-end"><button class="btn btn-secondary" id="new-user-btn">+ New User</button></div>' +
     '<div id="user-form-wrap" style="margin-top:12px;display:none"></div>' +
     '<div class="crud-list" id="user-list"></div>';
   root.appendChild(panel);
@@ -1181,7 +1181,7 @@ function renderAdminTable() {
   if (count) count.textContent = total;
 
   if (total === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="table-empty">No requests found. Try adjusting your filters.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="table-empty">No requests found. Try adjusting your filters.</td></tr>';
     renderPagination(0);
     return;
   }
@@ -1229,6 +1229,17 @@ function renderAdminTable() {
       '</td>' +
       '<td>' + priorityBadge(req.priority) + '</td>' +
       '<td>' + formatDate(req.created_at) + '</td>' +
+      '<td onclick="event.stopPropagation()" style="text-align:center;white-space:nowrap">' +
+        '<button class="btn-icon" title="Delete request" aria-label="Delete request"' +
+          ' onclick="App.deleteRequest(' + req.id + ')" style="color:#EF4444">' +
+          '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">' +
+            '<polyline points="3 6 5 6 21 6"/>' +
+            '<path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>' +
+            '<path d="M10 11v6"/><path d="M14 11v6"/>' +
+            '<path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>' +
+          '</svg>' +
+        '</button>' +
+      '</td>' +
     '</tr>';
   }).join('');
 
@@ -1303,6 +1314,21 @@ App.updatePriority = function(id, newPriority, selectEl) {
       Toast.show('Priority updated', 'Changed to "' + newPriority.charAt(0).toUpperCase() + newPriority.slice(1) + '"', 'success');
     })
     .catch(function(err) { Toast.show('Update failed', err.message, 'error'); });
+};
+
+/* ---- Delete request ---- */
+App.deleteRequest = function(id) {
+  if (!confirm('Delete this request? This action cannot be undone.')) return;
+  API.admin.deleteRequest(id, state.token)
+    .then(function() {
+      state.adminRequests = state.adminRequests.filter(function(r) { return r.id !== id; });
+      state.adminFiltered = state.adminFiltered.filter(function(r) { return r.id !== id; });
+      if (state.selectedRequestId === id) App.closeSidePanel();
+      renderAdminStats();
+      renderAdminTable();
+      Toast.show('Deleted', 'Request has been permanently deleted', 'success');
+    })
+    .catch(function(err) { Toast.show('Delete failed', err.message || 'Could not delete request', 'error'); });
 };
 
 /* ---- Admin private note ---- */
@@ -1598,6 +1624,18 @@ function _renderPanelContent(container, req) {
           '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>' +
           '<span class="btn-text">Save Internal Note</span>' +
           '<span class="btn-spinner hidden" aria-hidden="true"></span>' +
+        '</button>' +
+      '</div>' +
+
+      '<div style="padding-top:12px;margin-top:4px;border-top:1px solid var(--border)">' +
+        '<button class="btn btn-danger btn-full" onclick="App.deleteRequest(' + req.id + ')">' +
+          '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="flex-shrink:0">' +
+            '<polyline points="3 6 5 6 21 6"/>' +
+            '<path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>' +
+            '<path d="M10 11v6"/><path d="M14 11v6"/>' +
+            '<path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/>' +
+          '</svg>' +
+          'Delete Request' +
         '</button>' +
       '</div>' +
 

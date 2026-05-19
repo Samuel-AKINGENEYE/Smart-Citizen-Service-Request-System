@@ -796,6 +796,24 @@ app.post('/api/admin/requests/:id/response', authenticateToken, requireAdmin, as
   }
 });
 
+app.delete('/api/admin/requests/:id', authenticateToken, requireAdmin, async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const [existing] = await q('SELECT id FROM requests WHERE id = ?', [id]);
+    if (!existing) return res.status(404).json({ success: false, message: 'Request not found' });
+
+    await q('DELETE FROM request_attachments WHERE request_id = ?', [id]);
+    await q('DELETE FROM request_timeline WHERE request_id = ?', [id]);
+    await q('DELETE FROM request_responses WHERE request_id = ?', [id]);
+    await q('DELETE FROM request_ratings WHERE request_id = ?', [id]);
+    await q('DELETE FROM requests WHERE id = ?', [id]);
+
+    res.json({ success: true, message: 'Request deleted' });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // ========================
 // DATABASE INIT
 // ========================

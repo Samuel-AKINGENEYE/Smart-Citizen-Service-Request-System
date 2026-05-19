@@ -148,6 +148,10 @@ const admin = {
   async addResponse(id, message, token) {
     return _request('POST', `/admin/requests/${id}/response`, { message }, token);
   },
+
+  async deleteRequest(id, token) {
+    return _request('DELETE', `/admin/requests/${id}`, null, token);
+  },
 };
 
 /* ============================================================

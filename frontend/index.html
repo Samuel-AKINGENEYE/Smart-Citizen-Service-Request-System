@@ -414,8 +414,8 @@
           <ul class="admin-menu">
             <li><button onclick="App.showAdminPanel('dashboard')" class="admin-menu-btn">Dashboard</button></li>
             <li><button onclick="App.showAdminPanel('requests')" class="admin-menu-btn">Requests</button></li>
-            <li><button onclick="App.showAdminPanel('categories')" class="admin-menu-btn">Categories (CRUD)</button></li>
-            <li><button onclick="App.showAdminPanel('users')" class="admin-menu-btn">Users (CRUD)</button></li>
+            <li><button onclick="App.showAdminPanel('categories')" class="admin-menu-btn">Categories</button></li>
+            <li><button onclick="App.showAdminPanel('users')" class="admin-menu-btn">Users</button></li>
             <li><button onclick="App.showAdminPanel('reports')" class="admin-menu-btn">Reports</button></li>
             <li style="margin-top:12px"><button onclick="App.showAdminPanel('settings')" class="admin-menu-btn">Settings</button></li>
           </ul>
@@ -507,14 +507,15 @@
                       scope="col" tabindex="0" role="columnheader" aria-sort="none">
                     Date <span class="sort-indicator">↕</span>
                   </th>
+                  <th scope="col" style="text-align:center">Actions</th>
                 </tr>
               </thead>
               <tbody id="admin-tbody" aria-live="polite">
-                <tr class="table-skel-row"><td colspan="8"><div class="skeleton skel-text" style="width:80%"></div></td></tr>
-                <tr class="table-skel-row"><td colspan="8"><div class="skeleton skel-text" style="width:70%"></div></td></tr>
-                <tr class="table-skel-row"><td colspan="8"><div class="skeleton skel-text" style="width:75%"></div></td></tr>
-                <tr class="table-skel-row"><td colspan="8"><div class="skeleton skel-text" style="width:65%"></div></td></tr>
-                <tr class="table-skel-row"><td colspan="8"><div class="skeleton skel-text" style="width:85%"></div></td></tr>
+                <tr class="table-skel-row"><td colspan="9"><div class="skeleton skel-text" style="width:80%"></div></td></tr>
+                <tr class="table-skel-row"><td colspan="9"><div class="skeleton skel-text" style="width:70%"></div></td></tr>
+                <tr class="table-skel-row"><td colspan="9"><div class="skeleton skel-text" style="width:75%"></div></td></tr>
+                <tr class="table-skel-row"><td colspan="9"><div class="skeleton skel-text" style="width:65%"></div></td></tr>
+                <tr class="table-skel-row"><td colspan="9"><div class="skeleton skel-text" style="width:85%"></div></td></tr>
               </tbody>
             </table>
           </div>
