@@ -22,8 +22,23 @@
   <!-- ===================================================
        AUTH VIEW
        =================================================== -->
-  <div id="auth-view" class="auth-view">
-    <div class="auth-card" role="main" style="position:relative">
+  <!-- Landing + Auth split layout -->
+  <div class="landing-auth">
+    <div class="landing-hero" aria-hidden="false">
+      <div class="landing-hero-inner">
+        <p class="landing-eyebrow">Welcome to the City Service Request Portal</p>
+        <h1 class="landing-title">Report issues, track progress, and receive official updates.</h1>
+        <p class="landing-description">This platform helps citizens send service requests for potholes, broken streetlights, water leaks, waste collection problems, and other local concerns. Your report is documented, handled by city staff, and tracked in your dashboard with attachments and response history.</p>
+        <div class="landing-actions">
+          <button class="btn btn-primary btn-lg" onclick="App.openRequestModal()">Submit a request</button>
+          <button class="btn btn-secondary btn-lg" onclick="document.getElementById('citizen-requests-list').scrollIntoView({behavior:'smooth'})">View my requests</button>
+        </div>
+      </div>
+      <div class="landing-hero-overlay"></div>
+    </div>
+
+    <div id="auth-view" class="auth-view auth-side">
+      <div class="auth-card" role="main" style="position:relative">
 
       <!-- Logo -->
       <div class="auth-logo">
@@ -294,18 +309,7 @@
         </div>
       </div>
 
-      <!-- Landing / Purpose Section -->
-      <div class="landing-banner" aria-label="About the citizen service request system">
-        <div class="landing-copy">
-          <p class="landing-eyebrow">Welcome to the City Service Request Portal</p>
-          <h1 class="landing-title">Report issues, track progress, and receive official updates.</h1>
-          <p class="landing-description">This platform helps citizens send service requests for potholes, broken streetlights, water leaks, waste collection problems, and other local concerns. Your report is documented, handled by city staff, and tracked in your dashboard with attachments and response history.</p>
-          <div class="landing-actions">
-            <button class="btn btn-primary btn-lg" onclick="App.openRequestModal()">Submit a request</button>
-            <button class="btn btn-secondary btn-lg" onclick="document.getElementById('citizen-requests-list').scrollIntoView({behavior:'smooth'})">View my requests</button>
-          </div>
-        </div>
-      </div>
+
 
       <!-- Stats Grid (skeleton initially) -->
       <div class="stats-grid" id="citizen-stats-grid" aria-label="Request statistics">
@@ -752,6 +756,7 @@
         </button>
       </div>
     </div>
+  </div>
   </div>
 
   <!-- ===================================================

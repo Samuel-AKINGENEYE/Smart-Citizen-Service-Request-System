@@ -1554,6 +1554,63 @@ input[type="password"] { padding-right: 42px; }
   flex-shrink: 0;
   gap: 12px;
 }
+
+/* ============================================================
+   LANDING + AUTH SPLIT (new)
+   ============================================================ */
+.landing-auth {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-page);
+}
+.landing-hero {
+  position: relative;
+  padding: 40px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: linear-gradient(180deg, rgba(79,70,229,0.95) 0%, rgba(14,165,233,0.85) 100%);
+}
+.landing-hero-inner {
+  max-width: 560px;
+}
+.landing-hero .landing-eyebrow { color: rgba(255,255,255,0.9); font-weight:600; margin-bottom:8px; }
+.landing-hero .landing-title { font-size: 2rem; line-height:1.05; margin-bottom:12px; color:#FFF; }
+.landing-hero .landing-description { color: rgba(255,255,255,0.92); margin-bottom:18px; }
+.landing-hero .landing-actions { display:flex; gap:10px; }
+.landing-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(13,42,70,0.18), rgba(12,25,60,0.06));
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+.auth-side { background: transparent; }
+.auth-view.auth-side {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.98) 100%);
+}
+.auth-view.auth-side .auth-card { box-shadow: 0 8px 30px rgba(15,23,42,0.06); }
+
+@media (min-width: 900px) {
+  .landing-auth { flex-direction: row; }
+  .landing-hero { flex: 1 1 60%; min-height: 100vh; padding: 80px; }
+  .auth-view.auth-side { flex: 0 0 420px; padding: 60px; }
+  .landing-hero .landing-title { font-size: 2.4rem; }
+}
+
+@media (max-width: 899px) {
+  .landing-hero { padding: 36px 20px; text-align: left; }
+  .landing-hero .landing-title { font-size: 1.5rem; }
+}
+
 .panel-header-info { flex: 1; min-width: 0; }
 .panel-title { font-size: 0.967rem; font-weight: 700; }
 .panel-subtitle {
