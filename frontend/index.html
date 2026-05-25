@@ -5,30 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Smart Citizen Request System</title>
   <meta name="description" content="Submit and track city service requests — potholes, water leaks, streetlights, and more.">
-  <!-- Favicon -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%234F46E5'/><text y='.9em' font-size='72' x='12'>🏛️</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
-  <!-- ===================================================
-       TOAST CONTAINER
-       =================================================== -->
+  <!-- Toast container -->
   <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 
   <!-- ===================================================
        AUTH VIEW
        =================================================== -->
   <div id="auth-view" class="auth-view">
-    <div class="auth-card" role="main" style="position:relative">
+    <div class="auth-card" role="main">
 
       <!-- Logo -->
       <div class="auth-logo">
         <div class="auth-logo-icon" aria-hidden="true">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
             <polyline points="9 22 9 12 15 12 15 22"/>
           </svg>
@@ -52,7 +49,9 @@
       <!-- Sign In Panel -->
       <div id="panel-signin" class="auth-panel" role="tabpanel" aria-labelledby="tab-signin">
         <div id="signin-error" class="error-banner hidden" role="alert">
-          <span class="error-banner-icon">⚠️</span>
+          <span class="error-banner-icon" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </span>
           <span id="signin-error-text"></span>
         </div>
         <form id="signin-form" novalidate>
@@ -87,13 +86,11 @@
           </button>
         </form>
 
-        <!-- Social Login Divider -->
         <div class="auth-divider" aria-hidden="true"><span>or continue with</span></div>
 
-        <!-- Social Login Buttons -->
         <div class="social-grid" role="group" aria-label="Social login options">
           <button type="button" class="btn-social btn-google" onclick="App.socialLogin('google')" aria-label="Continue with Google">
-            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
               <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
@@ -102,19 +99,19 @@
             Google
           </button>
           <button type="button" class="btn-social btn-apple" onclick="App.socialLogin('apple')" aria-label="Continue with Apple">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.7 9.05 7.4c1.37.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.32 2.98-2.53 4zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
             </svg>
             Apple
           </button>
           <button type="button" class="btn-social btn-facebook" onclick="App.socialLogin('facebook')" aria-label="Continue with Facebook">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="#1877F2" aria-hidden="true">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="#1877F2" aria-hidden="true">
               <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
             </svg>
             Facebook
           </button>
           <button type="button" class="btn-social btn-twitter" onclick="App.socialLogin('twitter')" aria-label="Continue with X (Twitter)">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
             </svg>
             X (Twitter)
@@ -130,7 +127,9 @@
       <!-- Create Account Panel -->
       <div id="panel-register" class="auth-panel hidden" role="tabpanel" aria-labelledby="tab-register">
         <div id="register-error" class="error-banner hidden" role="alert">
-          <span class="error-banner-icon">⚠️</span>
+          <span class="error-banner-icon" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </span>
           <span id="register-error-text"></span>
         </div>
         <form id="register-form" novalidate>
@@ -186,18 +185,18 @@
         </form>
       </div>
 
-      <!-- OTP Panel (shown after registration) -->
+      <!-- OTP Panel -->
       <div id="panel-otp" class="auth-panel hidden" role="tabpanel">
         <div class="otp-info">
           <div class="otp-info-icon" aria-hidden="true">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
               <polyline points="22,6 12,13 2,6"/>
             </svg>
           </div>
           <div>
             <strong>Check your email</strong>
-            <p>We sent a 6-digit verification code to<br><span class="otp-email-addr" id="otp-email-display">your email</span></p>
+            <p>We sent a 6-digit code to<br><span class="otp-email-addr" id="otp-email-display">your email</span></p>
           </div>
         </div>
         <div class="field-group">
@@ -229,12 +228,11 @@
        =================================================== -->
   <div id="citizen-view" class="app-view hidden">
 
-    <!-- Header -->
     <header class="app-header" role="banner">
       <div class="header-inner">
         <div class="header-logo" aria-label="Smart Citizen Request System">
           <div class="header-logo-icon" aria-hidden="true">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
               <polyline points="9 22 9 12 15 12 15 22"/>
             </svg>
@@ -242,11 +240,12 @@
           <span class="header-logo-name">Smart Citizen</span>
           <span class="header-logo-tag">Request System</span>
         </div>
-        <!-- Gamification badge in header -->
+
         <div class="header-xp" id="header-xp" title="Your civic points and level" aria-label="Civic points">
           <span class="xp-badge-icon" id="header-badge-icon">🏅</span>
           <span class="xp-points" id="header-points">0 pts</span>
         </div>
+
         <div class="header-user">
           <button class="user-menu-btn" id="citizen-menu-btn" aria-haspopup="true" aria-expanded="false"
                   onclick="App.toggleUserMenu('citizen')">
@@ -262,7 +261,7 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
               </svg>
-              Logout
+              Sign Out
             </button>
           </div>
         </div>
@@ -271,7 +270,7 @@
 
     <main class="app-main" id="citizen-main">
 
-      <!-- Gamification Level Card -->
+      <!-- XP Level Card -->
       <div class="xp-level-card" id="xp-level-card" aria-label="Your civic level and points">
         <div class="xp-level-left">
           <div class="xp-avatar-large" id="xp-avatar-emoji">🏅</div>
@@ -294,33 +293,31 @@
         </div>
       </div>
 
-
-
-      <!-- Stats Grid (skeleton initially) -->
+      <!-- Stats Grid -->
       <div class="stats-grid" id="citizen-stats-grid" aria-label="Request statistics">
         <div class="stat-card-skeleton">
-          <div class="skeleton skel-icon" style="width:44px;height:44px;border-radius:10px"></div>
+          <div class="skeleton skel-icon"></div>
           <div class="skeleton skel-text" style="width:60%"></div>
           <div class="skeleton skel-stat-num"></div>
         </div>
         <div class="stat-card-skeleton">
-          <div class="skeleton skel-icon" style="width:44px;height:44px;border-radius:10px"></div>
+          <div class="skeleton skel-icon"></div>
           <div class="skeleton skel-text" style="width:50%"></div>
           <div class="skeleton skel-stat-num"></div>
         </div>
         <div class="stat-card-skeleton">
-          <div class="skeleton skel-icon" style="width:44px;height:44px;border-radius:10px"></div>
+          <div class="skeleton skel-icon"></div>
           <div class="skeleton skel-text" style="width:55%"></div>
           <div class="skeleton skel-stat-num"></div>
         </div>
         <div class="stat-card-skeleton">
-          <div class="skeleton skel-icon" style="width:44px;height:44px;border-radius:10px"></div>
+          <div class="skeleton skel-icon"></div>
           <div class="skeleton skel-text" style="width:65%"></div>
           <div class="skeleton skel-stat-num"></div>
         </div>
       </div>
 
-      <!-- CTA -->
+      <!-- Submit CTA -->
       <div class="cta-row">
         <button class="btn btn-primary btn-lg btn-full submit-cta-btn" id="open-request-modal-btn"
                 onclick="App.openRequestModal()" aria-label="Submit a new service request">
@@ -331,14 +328,13 @@
         </button>
       </div>
 
-      <!-- My Requests Section -->
+      <!-- My Requests -->
       <div class="section-header">
         <h2 class="section-title">My Requests</h2>
         <span class="section-count" id="citizen-req-count">—</span>
       </div>
 
       <div id="citizen-requests-list" class="requests-list" aria-live="polite">
-        <!-- Skeleton cards shown immediately -->
         <div class="request-card-skel">
           <div class="skeleton skel-icon"></div>
           <div style="flex:1;display:flex;flex-direction:column;gap:8px">
@@ -371,12 +367,11 @@
        =================================================== -->
   <div id="admin-view" class="app-view hidden">
 
-    <!-- Header -->
     <header class="app-header" role="banner">
       <div class="header-inner">
-        <div class="header-logo" aria-label="Smart Citizen Request System — Admin">
+        <div class="header-logo" aria-label="Smart Citizen — Admin Console">
           <div class="header-logo-icon" aria-hidden="true">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
               <polyline points="9 22 9 12 15 12 15 22"/>
             </svg>
@@ -399,7 +394,7 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
               </svg>
-              Logout
+              Sign Out
             </button>
           </div>
         </div>
@@ -407,46 +402,102 @@
     </header>
 
     <div class="admin-layout">
-      <!-- Sidebar for admin CRUD navigation -->
-      <nav class="admin-sidebar" role="navigation" aria-label="Admin menu">
+
+      <!-- Sidebar -->
+      <nav class="admin-sidebar" role="navigation" aria-label="Admin navigation">
         <div class="admin-sidebar-inner">
-          <div class="admin-sidebar-brand">Admin</div>
-          <ul class="admin-menu">
-            <li><button onclick="App.showAdminPanel('dashboard')" class="admin-menu-btn">Dashboard</button></li>
-            <li><button onclick="App.showAdminPanel('requests')" class="admin-menu-btn">Requests</button></li>
-            <li><button onclick="App.showAdminPanel('categories')" class="admin-menu-btn">Categories</button></li>
-            <li><button onclick="App.showAdminPanel('users')" class="admin-menu-btn">Users</button></li>
-            <li><button onclick="App.showAdminPanel('reports')" class="admin-menu-btn">Reports</button></li>
-            <li style="margin-top:12px"><button onclick="App.showAdminPanel('settings')" class="admin-menu-btn">Settings</button></li>
+          <div class="admin-sidebar-brand">Navigation</div>
+          <ul class="admin-menu" role="list">
+            <li>
+              <button onclick="App.showAdminPanel('dashboard')" class="admin-menu-btn" aria-label="Dashboard">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                  <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                </svg>
+                Dashboard
+              </button>
+            </li>
+            <li>
+              <button onclick="App.showAdminPanel('requests')" class="admin-menu-btn" aria-label="Requests">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                  <polyline points="10 9 9 9 8 9"/>
+                </svg>
+                Requests
+              </button>
+            </li>
+            <li>
+              <button onclick="App.showAdminPanel('categories')" class="admin-menu-btn" aria-label="Categories">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/>
+                  <line x1="7" y1="7" x2="7.01" y2="7"/>
+                </svg>
+                Categories
+              </button>
+            </li>
+            <li>
+              <button onclick="App.showAdminPanel('users')" class="admin-menu-btn" aria-label="Users">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                  <circle cx="9" cy="7" r="4"/>
+                  <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                  <path d="M16 3.13a4 4 0 010 7.75"/>
+                </svg>
+                Users
+              </button>
+            </li>
+            <li>
+              <button onclick="App.showAdminPanel('reports')" class="admin-menu-btn" aria-label="Reports">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <line x1="18" y1="20" x2="18" y2="10"/>
+                  <line x1="12" y1="20" x2="12" y2="4"/>
+                  <line x1="6"  y1="20" x2="6"  y2="14"/>
+                </svg>
+                Reports
+              </button>
+            </li>
+            <li class="admin-menu-item-group">
+              <button onclick="App.showAdminPanel('settings')" class="admin-menu-btn" aria-label="Settings">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+                </svg>
+                Settings
+              </button>
+            </li>
           </ul>
         </div>
       </nav>
+
+      <!-- Main content area -->
       <div class="admin-content">
         <main class="app-main">
 
-          <!-- Admin CRUD mount point -->
+          <!-- CRUD mount point -->
           <div id="admin-crud-root" aria-live="polite"></div>
 
-
           <!-- Admin Stats -->
-          <div class="stats-grid" id="admin-stats-grid" aria-label="Request statistics">
+          <div class="stats-grid" id="admin-stats-grid" aria-label="Platform statistics">
             <div class="stat-card-skeleton">
-              <div class="skeleton skel-icon" style="width:44px;height:44px;border-radius:10px"></div>
+              <div class="skeleton skel-icon"></div>
               <div class="skeleton skel-text" style="width:60%"></div>
               <div class="skeleton skel-stat-num"></div>
             </div>
             <div class="stat-card-skeleton">
-              <div class="skeleton skel-icon" style="width:44px;height:44px;border-radius:10px"></div>
+              <div class="skeleton skel-icon"></div>
               <div class="skeleton skel-text" style="width:50%"></div>
               <div class="skeleton skel-stat-num"></div>
             </div>
             <div class="stat-card-skeleton">
-              <div class="skeleton skel-icon" style="width:44px;height:44px;border-radius:10px"></div>
+              <div class="skeleton skel-icon"></div>
               <div class="skeleton skel-text" style="width:55%"></div>
               <div class="skeleton skel-stat-num"></div>
             </div>
             <div class="stat-card-skeleton">
-              <div class="skeleton skel-icon" style="width:44px;height:44px;border-radius:10px"></div>
+              <div class="skeleton skel-icon"></div>
               <div class="skeleton skel-text" style="width:65%"></div>
               <div class="skeleton skel-stat-num"></div>
             </div>
@@ -475,7 +526,7 @@
           </div>
 
           <!-- Requests Table -->
-          <div class="section-header" style="margin-bottom:12px">
+          <div class="section-header">
             <h2 class="section-title">All Requests</h2>
             <span class="section-count" id="admin-req-count">—</span>
           </div>
@@ -526,24 +577,24 @@
         </main>
       </div>
 
-      <!-- Side Panel -->
+      <!-- Detail Side Panel -->
       <aside class="side-panel hidden" id="admin-side-panel" role="complementary" aria-label="Request details">
         <div class="panel-header">
           <div class="panel-header-info">
             <h3 class="panel-title" id="panel-ref">Request Details</h3>
             <p class="panel-subtitle" id="panel-subtitle"></p>
           </div>
-          <div style="display:flex;gap:6px;align-items:center">
+          <div class="panel-actions-row">
             <button class="btn-icon" id="refresh-panel-btn" aria-label="Refresh request details"
                     onclick="App.refreshPanel()" title="Refresh">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
                 <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
                 <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
               </svg>
             </button>
-            <button class="btn-icon" id="close-panel-btn" aria-label="Close request detail panel"
+            <button class="btn-icon" id="close-panel-btn" aria-label="Close detail panel"
                     onclick="App.closeSidePanel()">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
                 <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
               </svg>
             </button>
@@ -551,8 +602,8 @@
         </div>
         <div class="panel-body" id="panel-body"></div>
       </aside>
-    </div>
 
+    </div>
   </div>
 
   <!-- ===================================================
@@ -566,7 +617,7 @@
         <h2 class="modal-title" id="modal-title-text">Submit New Request</h2>
         <button class="btn-icon" id="close-modal-btn" aria-label="Close form"
                 onclick="App.closeRequestModal()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
         </button>
@@ -600,16 +651,14 @@
 
         <!-- STEP 1: Category -->
         <div class="step-panel active" id="step-panel-1" role="group" aria-labelledby="step1-heading">
-          <p id="step1-heading" style="font-size:.867rem;color:var(--text-secondary);margin-bottom:14px;">
-            Choose the category that best describes your issue.
-          </p>
+          <p id="step1-heading" class="step-lead">Choose the category that best describes your issue.</p>
           <div class="category-grid" id="category-grid" aria-label="Service categories">
-            <div class="skeleton" style="height:100px;border-radius:var(--r-card)"></div>
-            <div class="skeleton" style="height:100px;border-radius:var(--r-card)"></div>
-            <div class="skeleton" style="height:100px;border-radius:var(--r-card)"></div>
-            <div class="skeleton" style="height:100px;border-radius:var(--r-card)"></div>
-            <div class="skeleton" style="height:100px;border-radius:var(--r-card)"></div>
-            <div class="skeleton" style="height:100px;border-radius:var(--r-card)"></div>
+            <div class="skeleton" style="height:100px;border-radius:var(--r-lg)"></div>
+            <div class="skeleton" style="height:100px;border-radius:var(--r-lg)"></div>
+            <div class="skeleton" style="height:100px;border-radius:var(--r-lg)"></div>
+            <div class="skeleton" style="height:100px;border-radius:var(--r-lg)"></div>
+            <div class="skeleton" style="height:100px;border-radius:var(--r-lg)"></div>
+            <div class="skeleton" style="height:100px;border-radius:var(--r-lg)"></div>
           </div>
           <div id="step1-error" class="field-error" style="margin-top:10px" role="alert"></div>
         </div>
@@ -618,27 +667,24 @@
         <div class="step-panel" id="step-panel-2" role="group" aria-labelledby="step2-heading">
           <p id="step2-heading" class="sr-only">Provide details about your issue</p>
           <div class="field-group">
-            <label for="req-title">
-              Title <span class="required" aria-hidden="true">*</span>
-            </label>
+            <label for="req-title">Title <span class="required" aria-hidden="true">*</span></label>
             <div class="input-wrap">
-              <input type="text" id="req-title" maxlength="100" placeholder="e.g. Large pothole on Main St near intersection"
+              <input type="text" id="req-title" maxlength="100"
+                     placeholder="e.g. Large pothole on Main St near intersection"
                      aria-required="true" aria-describedby="title-count req-title-err">
               <span class="field-status-icon" id="req-title-icon" aria-hidden="true"></span>
             </div>
-            <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="char-count-row">
               <span class="field-error" id="req-title-err" role="alert"></span>
               <span class="char-count" id="title-count" aria-live="polite">0 / 100</span>
             </div>
           </div>
           <div class="field-group">
-            <label for="req-description">
-              Description <span class="required" aria-hidden="true">*</span>
-            </label>
+            <label for="req-description">Description <span class="required" aria-hidden="true">*</span></label>
             <textarea id="req-description" rows="4" maxlength="500"
-                      placeholder="Describe the issue in detail — when you noticed it, the impact, and any other relevant information."
+                      placeholder="Describe the issue — when you noticed it, the impact, and any relevant details."
                       aria-required="true" aria-describedby="desc-count req-desc-err"></textarea>
-            <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="char-count-row">
               <span class="field-error" id="req-desc-err" role="alert"></span>
               <span class="char-count" id="desc-count" aria-live="polite">0 / 500</span>
             </div>
@@ -652,7 +698,7 @@
         <!-- STEP 3: Priority + Photos -->
         <div class="step-panel" id="step-panel-3" role="group" aria-labelledby="step3-heading">
           <p id="step3-heading" class="sr-only">Set priority and attach photos</p>
-          <div class="field-group" style="margin-bottom:24px">
+          <div class="field-group" style="margin-bottom:20px">
             <label>Priority <span class="required" aria-hidden="true">*</span></label>
             <div class="priority-grid" role="radiogroup" aria-label="Request priority">
               <label class="priority-option">
@@ -673,12 +719,18 @@
             <label>Photos <span style="font-weight:400;color:var(--text-muted)">(optional, max 5)</span></label>
             <div class="dropzone" id="dropzone" role="button" tabindex="0"
                  aria-label="Upload photos — drag and drop or click to browse">
-              <div class="dropzone-icon" aria-hidden="true">📷</div>
+              <div class="dropzone-icon" aria-hidden="true">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <circle cx="8.5" cy="8.5" r="1.5"/>
+                  <polyline points="21 15 16 10 5 21"/>
+                </svg>
+              </div>
               <p class="dropzone-text">
                 Drag & drop photos here, or
-                <span class="dropzone-link" onclick="document.getElementById('photo-input').click()">browse</span>
+                <span class="dropzone-link" onclick="document.getElementById('photo-input').click()">browse files</span>
               </p>
-              <p class="dropzone-hint">PNG, JPG, WEBP up to 10MB each</p>
+              <p class="dropzone-hint">PNG, JPG, WEBP — up to 10 MB each</p>
               <input type="file" id="photo-input" accept="image/*" multiple
                      aria-label="Choose photo files" style="display:none">
             </div>
@@ -688,11 +740,8 @@
 
         <!-- STEP 4: Review -->
         <div class="step-panel" id="step-panel-4" role="group" aria-labelledby="step4-heading">
-          <p id="step4-heading" style="font-size:.867rem;color:var(--text-secondary);margin-bottom:14px;">
-            Review your request before submitting.
-          </p>
+          <p id="step4-heading" class="step-lead">Review your request before submitting.</p>
           <div class="review-summary" id="review-content" aria-label="Request summary"></div>
-          <!-- XP reward preview -->
           <div class="xp-reward-preview" aria-hidden="true">
             <span class="xp-reward-icon">⚡</span>
             <span>You'll earn <strong>+10 civic points</strong> for submitting this request</span>
@@ -701,7 +750,6 @@
 
       </div>
 
-      <!-- Modal Footer -->
       <div class="modal-footer">
         <button class="btn btn-secondary" id="modal-back-btn" onclick="App.modalBack()" style="display:none">
           Back
@@ -723,7 +771,7 @@
       <div class="modal-header">
         <h2 class="modal-title" id="rating-modal-title">Rate the Response</h2>
         <button class="btn-icon" aria-label="Close" onclick="App.closeRatingModal()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
         </button>
@@ -752,7 +800,7 @@
           <span>Earn <strong>+5 civic points</strong> for providing feedback</span>
         </div>
       </div>
-      <div class="modal-footer" style="justify-content:flex-end;gap:10px">
+      <div class="modal-footer">
         <button class="btn btn-secondary" onclick="App.closeRatingModal()">Cancel</button>
         <button class="btn btn-primary" id="submit-rating-btn" onclick="App.submitRating()">
           <span class="btn-text">Submit Rating</span>
@@ -761,22 +809,23 @@
       </div>
     </div>
   </div>
+
   <!-- ===================================================
        IMAGE LIGHTBOX
        =================================================== -->
   <div class="lightbox hidden" id="lightbox" role="dialog" aria-modal="true" aria-label="Image viewer">
     <button class="lightbox-close" id="lightbox-close-btn" onclick="App.closeLightbox()" aria-label="Close image viewer">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
         <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
       </svg>
     </button>
     <button class="lightbox-nav lightbox-prev" id="lightbox-prev" onclick="App.lightboxPrev()" aria-label="Previous image">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
         <polyline points="15 18 9 12 15 6"/>
       </svg>
     </button>
     <button class="lightbox-nav lightbox-next" id="lightbox-next" onclick="App.lightboxNext()" aria-label="Next image">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
         <polyline points="9 18 15 12 9 6"/>
       </svg>
     </button>
@@ -789,10 +838,9 @@
     </div>
   </div>
 
-  <!-- Floating XP container (used by JS) -->
+  <!-- Floating XP container -->
   <div id="xp-float-container" aria-hidden="true"></div>
 
-  <!-- Scripts -->
   <script src="js/api.js"></script>
   <script src="js/app.js"></script>
 </body>
